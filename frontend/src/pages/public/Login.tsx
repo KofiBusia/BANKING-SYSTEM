@@ -143,12 +143,6 @@ export default function Login() {
             </p>
           </div>
 
-          <div className="mt-8 p-4 bg-blue-50 rounded-xl border border-blue-100">
-            <p className="text-xs text-blue-800 font-medium mb-1">Demo Accounts:</p>
-            <p className="text-xs text-blue-600">Admin: admin@ghanabank.com / Admin@GhanaBank2024</p>
-            <p className="text-xs text-blue-600">Manager: manager@ghanabank.com / Manager@GhanaBank2024</p>
-          </div>
-
           <p className="mt-6 text-center text-xs text-gray-400">
             Regulated by the Bank of Ghana | NDIC Insured
           </p>
