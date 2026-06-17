@@ -2,6 +2,10 @@ import os
 from flask import Flask, jsonify
 from config import config
 from extensions import db, jwt, bcrypt, cors, mail
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+
+_scheduler = None
 
 
 def create_app(config_name=None):
@@ -29,6 +33,7 @@ def create_app(config_name=None):
     from routes.loans import loans_bp
     from routes.admin import admin_bp
     from routes.notifications import notifications_bp
+    from routes.treasury_bills import tbills_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(accounts_bp, url_prefix='/api/accounts')
@@ -37,11 +42,38 @@ def create_app(config_name=None):
     app.register_blueprint(loans_bp, url_prefix='/api/loans')
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
+    app.register_blueprint(tbills_bp, url_prefix='/api/treasury-bills')
 
     # Create tables
     with app.app_context():
         db.create_all()
         _seed_initial_data(app)
+
+    # APScheduler: daily jobs for T-bill maturity and loan due alerts
+    global _scheduler
+    if _scheduler is None and not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        _scheduler = BackgroundScheduler(timezone='Africa/Accra')
+
+        def run_daily_checks():
+            with app.app_context():
+                try:
+                    from routes.treasury_bills import _process_maturity_checks
+                    result = _process_maturity_checks()
+                    app.logger.info(f"Daily checks: {result}")
+                except Exception as e:
+                    app.logger.error(f"Scheduler error: {str(e)}")
+
+        _scheduler.add_job(
+            func=run_daily_checks,
+            trigger='cron',
+            hour=7,
+            minute=0,
+            id='daily_checks',
+            replace_existing=True,
+        )
+        _scheduler.start()
+        atexit.register(lambda: _scheduler.shutdown(wait=False))
+        app.logger.info("APScheduler started — daily checks at 07:00 WAT")
 
     # JWT error handlers
     @jwt.expired_token_loader

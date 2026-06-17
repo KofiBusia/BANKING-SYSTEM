@@ -38,12 +38,12 @@ export function maskAccountNumber(accountNumber: string): string {
 }
 
 export function getTransactionColor(type: string): string {
-  const credits = ['deposit', 'transfer_in', 'loan_disbursement', 'interest_credit', 'mobile_money_in'];
+  const credits = ['deposit', 'transfer_in', 'loan_disbursement', 'interest_credit', 'mobile_money_in', 'treasury_bill_maturity'];
   return credits.includes(type) ? 'text-emerald-600' : 'text-red-600';
 }
 
 export function getTransactionSign(type: string): string {
-  const credits = ['deposit', 'transfer_in', 'loan_disbursement', 'interest_credit', 'mobile_money_in'];
+  const credits = ['deposit', 'transfer_in', 'loan_disbursement', 'interest_credit', 'mobile_money_in', 'treasury_bill_maturity'];
   return credits.includes(type) ? '+' : '-';
 }
 
@@ -113,6 +113,8 @@ export function getTransactionTypeLabel(type: string): string {
     mobile_money_out: 'Mobile Money Out',
     pos: 'POS Transaction',
     atm_withdrawal: 'ATM Withdrawal',
+    treasury_bill_purchase: 'T-Bill Investment',
+    treasury_bill_maturity: 'T-Bill Maturity Credit',
   };
   return labels[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }

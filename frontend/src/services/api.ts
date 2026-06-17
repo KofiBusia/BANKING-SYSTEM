@@ -103,6 +103,16 @@ export const notificationsAPI = {
   getUnreadCount: () => API.get('/notifications/unread-count'),
 };
 
+// Treasury Bills
+export const treasuryBillsAPI = {
+  getRates: () => API.get('/treasury-bills/rates'),
+  calculate: (data: object) => API.post('/treasury-bills/calculate', data),
+  invest: (data: object) => API.post('/treasury-bills/invest', data),
+  getAll: (params?: object) => API.get('/treasury-bills/', { params }),
+  getOne: (id: string) => API.get(`/treasury-bills/${id}`),
+  rollover: (id: string, data: object) => API.post(`/treasury-bills/${id}/rollover`, data),
+};
+
 // Admin
 export const adminAPI = {
   getDashboard: () => API.get('/admin/dashboard'),

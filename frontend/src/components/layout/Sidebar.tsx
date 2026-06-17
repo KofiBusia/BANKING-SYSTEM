@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, CreditCard, ArrowLeftRight, Banknote, FileText,
-  User, Settings, LogOut, Shield, Users, BarChart3, Building2, X, ChevronRight
+  User, Settings, LogOut, Shield, Users, BarChart3, Building2, X, ChevronRight, TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { clsx } from '../../utils/helpers';
@@ -17,6 +17,7 @@ const customerNav = [
   { label: 'Transactions', icon: ArrowLeftRight, href: '/dashboard/transactions' },
   { label: 'Transfer Money', icon: ArrowLeftRight, href: '/dashboard/transfer' },
   { label: 'Loans', icon: Banknote, href: '/dashboard/loans' },
+  { label: 'Treasury Bills', icon: TrendingUp, href: '/dashboard/treasury-bills' },
   { label: 'KYC Verification', icon: Shield, href: '/dashboard/kyc' },
   { label: 'Profile', icon: User, href: '/dashboard/profile' },
 ];

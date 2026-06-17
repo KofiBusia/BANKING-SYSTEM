@@ -15,6 +15,7 @@ import Transactions from './pages/customer/Transactions';
 import Transfer from './pages/customer/Transfer';
 import Loans from './pages/customer/Loans';
 import KYC from './pages/customer/KYC';
+import TreasuryBills from './pages/customer/TreasuryBills';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -68,6 +69,7 @@ function AppRoutes() {
         <Route path="transfer" element={<Transfer />} />
         <Route path="loans" element={<Loans />} />
         <Route path="kyc" element={<KYC />} />
+        <Route path="treasury-bills" element={<TreasuryBills />} />
       </Route>
 
       {/* Admin routes */}

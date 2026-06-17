@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Banknote, Eye, EyeOff, TrendingUp, Shield, AlertCircle, ChevronRight, Plus, Smartphone } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../../context/AuthContext';
-import { transactionsAPI } from '../../services/api';
+import { transactionsAPI, loansAPI, treasuryBillsAPI } from '../../services/api';
 import type { Transaction } from '../../types';
 import { formatCurrency, formatDateTime, getTransactionColor, getTransactionSign, getTransactionTypeLabel, maskAccountNumber } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
 const quickActions = [
-  { label: 'Deposit', icon: ArrowDownLeft, href: '/dashboard/transactions', color: 'bg-emerald-50 text-emerald-700', action: 'deposit' },
-  { label: 'Transfer', icon: ArrowLeftRight, href: '/dashboard/transfer', color: 'bg-blue-50 text-blue-700', action: 'transfer' },
-  { label: 'Loans', icon: Banknote, href: '/dashboard/loans', color: 'bg-purple-50 text-purple-700', action: 'loan' },
-  { label: 'Mobile Money', icon: Smartphone, href: '/dashboard/transactions', color: 'bg-orange-50 text-orange-700', action: 'mobile_money' },
+  { label: 'Deposit', icon: ArrowDownLeft, href: '/dashboard/transactions', color: 'bg-emerald-50 text-emerald-700' },
+  { label: 'Transfer', icon: ArrowLeftRight, href: '/dashboard/transfer', color: 'bg-blue-50 text-blue-700' },
+  { label: 'Loans', icon: Banknote, href: '/dashboard/loans', color: 'bg-purple-50 text-purple-700' },
+  { label: 'T-Bills', icon: TrendingUp, href: '/dashboard/treasury-bills', color: 'bg-amber-50 text-amber-700' },
 ];
 
 const mockChartData = [
@@ -30,9 +30,12 @@ export default function Dashboard() {
   const [hideBalance, setHideBalance] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(0);
   const [isLoadingTxns, setIsLoadingTxns] = useState(true);
+  const [activeLoans, setActiveLoans] = useState<any[]>([]);
+  const [activeTbills, setActiveTbills] = useState<any[]>([]);
 
   useEffect(() => {
     fetchRecentTransactions();
+    fetchLoansAndTbills();
   }, []);
 
   const fetchRecentTransactions = async () => {
@@ -43,6 +46,17 @@ export default function Dashboard() {
     } finally {
       setIsLoadingTxns(false);
     }
+  };
+
+  const fetchLoansAndTbills = async () => {
+    try {
+      const [loansRes, tbillsRes] = await Promise.all([
+        loansAPI.getAll({ status: 'active' }),
+        treasuryBillsAPI.getAll({ status: 'active' }),
+      ]);
+      setActiveLoans(loansRes.data.loans || []);
+      setActiveTbills(tbillsRes.data.treasury_bills || []);
+    } catch {}
   };
 
   const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
@@ -152,6 +166,62 @@ export default function Dashboard() {
           })}
         </div>
       </div>
+
+      {/* Loans & T-Bills Summary */}
+      {(activeLoans.length > 0 || activeTbills.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {activeLoans.length > 0 && (
+            <Link to="/dashboard/loans" className="card-hover p-5 border-l-4 border-purple-500">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Active Loans</p>
+                  <p className="text-xl font-bold text-gray-900 mt-1">{activeLoans.length} Loan{activeLoans.length > 1 ? 's' : ''}</p>
+                  <p className="text-sm text-purple-700 mt-1">
+                    Outstanding: {formatCurrency(activeLoans.reduce((s, l) => s + (l.outstanding_balance || 0), 0))}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <Banknote size={20} className="text-purple-600" />
+                </div>
+              </div>
+              {activeLoans[0]?.next_payment_date && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Next payment: {new Date(activeLoans[0].next_payment_date).toLocaleDateString('en-GH', { day: 'numeric', month: 'short' })}
+                  {' — '}{formatCurrency(activeLoans[0].monthly_installment || 0)}
+                </p>
+              )}
+              <div className="flex items-center gap-1 mt-2 text-xs text-purple-600 font-medium">
+                View details <ChevronRight size={12} />
+              </div>
+            </Link>
+          )}
+
+          {activeTbills.length > 0 && (
+            <Link to="/dashboard/treasury-bills" className="card-hover p-5 border-l-4 border-amber-500">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Treasury Bills</p>
+                  <p className="text-xl font-bold text-gray-900 mt-1">{activeTbills.length} Investment{activeTbills.length > 1 ? 's' : ''}</p>
+                  <p className="text-sm text-amber-700 mt-1">
+                    At maturity: {formatCurrency(activeTbills.reduce((s, t) => s + (t.maturity_value || 0), 0))}
+                  </p>
+                </div>
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                  <TrendingUp size={20} className="text-amber-600" />
+                </div>
+              </div>
+              {activeTbills[0]?.maturity_date && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Next maturity: {new Date(activeTbills[0].maturity_date).toLocaleDateString('en-GH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </p>
+              )}
+              <div className="flex items-center gap-1 mt-2 text-xs text-amber-600 font-medium">
+                View portfolio <ChevronRight size={12} />
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Accounts Overview */}
       {accounts.length > 0 && (

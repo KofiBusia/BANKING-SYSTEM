@@ -282,3 +282,189 @@ def send_loan_status_email(user, loan, status: str):
     </div></body></html>
     """
     return send_email(user.email, f'{bank_name} - Loan Application {status.title()}', html)
+
+
+def send_treasury_bill_email(user, tbill, event_type: str):
+    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+
+    if event_type == 'purchased':
+        subject = f'{bank_name} - Treasury Bill Investment Confirmed'
+        header_text = 'Investment Confirmed'
+        color = '#2563EB'
+        body = f"""
+        <p>Hello {user.first_name},</p>
+        <p>Your Treasury Bill investment has been confirmed. Here are your investment details:</p>
+        <div style="background:#f0f7ff;border-left:4px solid #2563EB;padding:20px;border-radius:4px;margin:20px 0">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Reference</span><strong>{tbill.reference}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Principal</span><strong>GHS {float(tbill.principal):,.2f}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Tenure</span><strong>{tbill.tenure_days} Days</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Interest Rate (p.a.)</span><strong>{float(tbill.interest_rate):.1f}%</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Investment Date</span><strong>{tbill.investment_date.strftime('%d %b %Y')}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Maturity Date</span><strong>{tbill.maturity_date.strftime('%d %b %Y')}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Gross Interest</span><strong>GHS {float(tbill.interest_earned):,.2f}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">WHT (8%)</span><strong style="color:#EF4444">- GHS {float(tbill.withholding_tax):,.2f}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #dce8f7">
+            <span style="color:#666">Net Interest</span><strong style="color:#10B981">GHS {float(tbill.net_interest):,.2f}</strong>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0">
+            <span style="color:#666;font-weight:bold">Expected Maturity Value</span>
+            <strong style="color:#2563EB;font-size:18px">GHS {float(tbill.maturity_value):,.2f}</strong>
+          </div>
+        </div>
+        <p style="color:#666;font-size:13px">You will receive a reminder 7 days before maturity and a credit notification when funds are disbursed.</p>
+        """
+    elif event_type == 'pre_maturity':
+        days_left = (tbill.maturity_date - __import__('datetime').date.today()).days
+        subject = f'{bank_name} - Treasury Bill Matures in {days_left} Day(s)'
+        header_text = f'T-Bill Matures in {days_left} Day(s)'
+        color = '#F59E0B'
+        body = f"""
+        <p>Hello {user.first_name},</p>
+        <p>This is a friendly reminder that your Treasury Bill investment is maturing soon.</p>
+        <div style="background:#fffbeb;border:1px solid #fbbf24;padding:20px;border-radius:8px;margin:20px 0">
+          <div style="text-align:center;font-size:32px;font-weight:bold;color:#D97706;margin-bottom:12px">{days_left} Day(s) to Maturity</div>
+          <div style="padding:8px 0;border-bottom:1px solid #fde68a"><span style="color:#666">Reference: </span><strong>{tbill.reference}</strong></div>
+          <div style="padding:8px 0;border-bottom:1px solid #fde68a"><span style="color:#666">Principal: </span><strong>GHS {float(tbill.principal):,.2f}</strong></div>
+          <div style="padding:8px 0;border-bottom:1px solid #fde68a"><span style="color:#666">Maturity Date: </span><strong>{tbill.maturity_date.strftime('%d %b %Y')}</strong></div>
+          <div style="padding:8px 0"><span style="color:#666">Maturity Value: </span><strong style="color:#10B981;font-size:18px">GHS {float(tbill.maturity_value):,.2f}</strong></div>
+        </div>
+        <p>Upon maturity, funds will be automatically credited to your linked account. You can also choose to roll over your investment for another term.</p>
+        """
+    else:  # matured
+        subject = f'{bank_name} - Treasury Bill Matured! GHS {float(tbill.maturity_value):,.2f} Credited'
+        header_text = 'Treasury Bill Matured'
+        color = '#10B981'
+        body = f"""
+        <p>Hello {user.first_name},</p>
+        <p>Great news! Your Treasury Bill investment has matured and funds have been credited to your account.</p>
+        <div style="background:#f0fdf4;border:1px solid #86efac;padding:20px;border-radius:8px;margin:20px 0;text-align:center">
+          <div style="font-size:14px;color:#166534;margin-bottom:8px">Total Amount Credited</div>
+          <div style="font-size:40px;font-weight:bold;color:#16a34a">GHS {float(tbill.maturity_value):,.2f}</div>
+          <div style="font-size:13px;color:#166534;margin-top:8px">Principal GHS {float(tbill.principal):,.2f} + Net Interest GHS {float(tbill.net_interest):,.2f}</div>
+        </div>
+        <div style="background:#f8fafc;padding:16px;border-radius:8px;margin:16px 0">
+          <div style="padding:6px 0"><span style="color:#666">Reference: </span><strong>{tbill.reference}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Investment Date: </span><strong>{tbill.investment_date.strftime('%d %b %Y')}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Maturity Date: </span><strong>{tbill.maturity_date.strftime('%d %b %Y')}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Gross Interest: </span><strong>GHS {float(tbill.interest_earned):,.2f}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">WHT Deducted (8%): </span><strong>GHS {float(tbill.withholding_tax):,.2f}</strong></div>
+        </div>
+        <p>Interested in reinvesting? Log in to roll over your funds into a new Treasury Bill.</p>
+        """
+
+    html = f"""
+    <!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}}
+    .container{{max-width:600px;margin:20px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)}}
+    .header{{background:linear-gradient(135deg,#1B3A6B,{color});padding:30px;text-align:center;color:#fff}}
+    .badge{{background:{color};color:#fff;padding:12px;text-align:center;font-size:16px;font-weight:bold}}
+    .body{{padding:30px}}
+    .btn{{display:inline-block;background:#2563EB;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold}}
+    .footer{{background:#f8fafc;padding:20px;text-align:center;color:#666;font-size:12px}}
+    </style></head><body>
+    <div class="container">
+      <div class="header"><h2 style="margin:0">{bank_name}</h2><p style="margin:5px 0 0;opacity:.9">Treasury Bill Update</p></div>
+      <div class="badge">{header_text}</div>
+      <div class="body">
+        {body}
+        <div style="text-align:center;margin-top:24px">
+          <a href="{frontend_url}/dashboard/treasury-bills" class="btn">View My Investments</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p>&copy; 2024 {bank_name}. All rights reserved.</p>
+        <p>Regulated by the Bank of Ghana | WHT deducted as required by Ghana Revenue Authority</p>
+      </div>
+    </div></body></html>
+    """
+    return send_email(user.email, subject, html)
+
+
+def send_loan_due_alert(user, loan, repayment):
+    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
+    from datetime import date
+    today = date.today()
+    days_until = (repayment.due_date - today).days
+    is_overdue = days_until < 0
+
+    if is_overdue:
+        subject = f'{bank_name} - OVERDUE Loan Payment - {abs(days_until)} Day(s) Overdue'
+        header_color = '#EF4444'
+        urgency_text = f'OVERDUE by {abs(days_until)} Day(s)'
+        urgency_color = '#fee2e2'
+        urgency_border = '#fecaca'
+        urgency_text_color = '#991b1b'
+    elif days_until == 0:
+        subject = f'{bank_name} - Loan Payment Due TODAY'
+        header_color = '#F59E0B'
+        urgency_text = 'DUE TODAY'
+        urgency_color = '#fffbeb'
+        urgency_border = '#fbbf24'
+        urgency_text_color = '#92400e'
+    else:
+        subject = f'{bank_name} - Loan Payment Due in {days_until} Day(s)'
+        header_color = '#F59E0B'
+        urgency_text = f'Due in {days_until} Day(s)'
+        urgency_color = '#fffbeb'
+        urgency_border = '#fbbf24'
+        urgency_text_color = '#92400e'
+
+    html = f"""
+    <!DOCTYPE html><html><head><meta charset="utf-8"><style>
+    body{{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:0}}
+    .container{{max-width:600px;margin:20px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.1)}}
+    .header{{background:linear-gradient(135deg,#1B3A6B,{header_color});padding:30px;text-align:center;color:#fff}}
+    .badge{{background:{header_color};color:#fff;padding:12px;text-align:center;font-size:16px;font-weight:bold}}
+    .body{{padding:30px}}
+    .btn{{display:inline-block;background:#2563EB;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold}}
+    .footer{{background:#f8fafc;padding:20px;text-align:center;color:#666;font-size:12px}}
+    </style></head><body>
+    <div class="container">
+      <div class="header"><h2 style="margin:0">{bank_name}</h2><p style="margin:5px 0 0;opacity:.9">Loan Payment Reminder</p></div>
+      <div class="badge">{urgency_text}</div>
+      <div class="body">
+        <p>Hello {user.first_name},</p>
+        <p>{'Your loan payment is overdue. Please make payment immediately to avoid further penalties.' if is_overdue else 'This is a reminder that your loan payment is due soon.'}</p>
+        <div style="background:{urgency_color};border:1px solid {urgency_border};padding:20px;border-radius:8px;margin:20px 0;text-align:center">
+          <div style="font-size:14px;color:{urgency_text_color}">Amount Due</div>
+          <div style="font-size:36px;font-weight:bold;color:{urgency_text_color}">GHS {float(repayment.total_amount):,.2f}</div>
+          <div style="font-size:13px;color:{urgency_text_color};margin-top:6px">Due: {repayment.due_date.strftime('%d %b %Y')}</div>
+        </div>
+        <div style="background:#f8fafc;padding:16px;border-radius:8px;margin:16px 0">
+          <div style="padding:6px 0"><span style="color:#666">Loan Number: </span><strong>{loan.loan_number}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Loan Type: </span><strong>{loan.loan_type.replace('_', ' ').title()}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Installment #: </span><strong>{repayment.installment_number}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Principal: </span><strong>GHS {float(repayment.principal_amount):,.2f}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Interest: </span><strong>GHS {float(repayment.interest_amount):,.2f}</strong></div>
+          <div style="padding:6px 0"><span style="color:#666">Outstanding Balance: </span><strong>GHS {float(loan.outstanding_balance):,.2f}</strong></div>
+        </div>
+        {'<p style="color:#EF4444;font-weight:bold">WARNING: Continued non-payment may result in loan penalty charges and affect your credit history.</p>' if is_overdue else ''}
+        <div style="text-align:center;margin-top:24px">
+          <a href="{frontend_url}/dashboard/loans" class="btn">Make Payment Now</a>
+        </div>
+      </div>
+      <div class="footer">
+        <p>&copy; 2024 {bank_name}. All rights reserved.</p>
+        <p>For assistance, call 0800 000 000 or email support@ghanabank.com</p>
+      </div>
+    </div></body></html>
+    """
+    return send_email(user.email, subject, html)

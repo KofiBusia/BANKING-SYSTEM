@@ -8,9 +8,11 @@ from .audit import AuditLog
 from .token import PasswordResetToken, VerificationCode
 from .branch import Branch
 from .staff import Staff
+from .treasury_bill import TreasuryBill
 
 __all__ = [
     'User', 'Account', 'Transaction', 'KYCInfo', 'KYCDocument',
     'Loan', 'LoanRepayment', 'Notification', 'AuditLog',
-    'PasswordResetToken', 'VerificationCode', 'Branch', 'Staff'
+    'PasswordResetToken', 'VerificationCode', 'Branch', 'Staff',
+    'TreasuryBill'
 ]
