@@ -23,8 +23,7 @@ def create_app(config_name=None):
     db.init_app(app)
     jwt.init_app(app)
     bcrypt.init_app(app)
-    frontend_url = app.config.get('FRONTEND_URL', '*')
-    cors.init_app(app, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:5173"]}}, supports_credentials=True)
+    cors.init_app(app, resources={r"/api/*": {"origins": "*", "allow_headers": ["Authorization", "Content-Type"], "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]}}, supports_credentials=False)
     mail.init_app(app)
     limiter.init_app(app)
 
