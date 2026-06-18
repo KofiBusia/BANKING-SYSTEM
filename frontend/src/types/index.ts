@@ -207,4 +207,6 @@ export interface RegisterData {
   password: string;
   confirm_password: string;
   ghana_card_number?: string;
+  branch_id?: string;
+  product_id?: string;
 }
