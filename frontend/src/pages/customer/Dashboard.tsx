@@ -6,7 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { transactionsAPI, loansAPI, treasuryBillsAPI } from '../../services/api';
 import type { Transaction } from '../../types';
 import { formatCurrency, formatDateTime, getTransactionColor, getTransactionSign, getTransactionTypeLabel, maskAccountNumber } from '../../utils/helpers';
-import toast from 'react-hot-toast';
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 const quickActions = [
   { label: 'Deposit', icon: ArrowDownLeft, href: '/dashboard/transactions', color: 'bg-emerald-50 text-emerald-700' },
@@ -15,18 +16,10 @@ const quickActions = [
   { label: 'T-Bills', icon: TrendingUp, href: '/dashboard/treasury-bills', color: 'bg-amber-50 text-amber-700' },
 ];
 
-const mockChartData = [
-  { month: 'Jan', deposits: 2400, withdrawals: 1200 },
-  { month: 'Feb', deposits: 1800, withdrawals: 900 },
-  { month: 'Mar', deposits: 3200, withdrawals: 1500 },
-  { month: 'Apr', deposits: 2800, withdrawals: 2000 },
-  { month: 'May', deposits: 4100, withdrawals: 1800 },
-  { month: 'Jun', deposits: 3600, withdrawals: 2200 },
-];
-
 export default function Dashboard() {
   const { user, accounts, refreshUser } = useAuth();
   const [recentTxns, setRecentTxns] = useState<Transaction[]>([]);
+  const [chartData, setChartData] = useState<{month: string; deposits: number; withdrawals: number}[]>([]);
   const [hideBalance, setHideBalance] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState(0);
   const [isLoadingTxns, setIsLoadingTxns] = useState(true);
@@ -40,12 +33,33 @@ export default function Dashboard() {
 
   const fetchRecentTransactions = async () => {
     try {
-      const res = await transactionsAPI.getAll({ per_page: 5 });
-      setRecentTxns(res.data.transactions || []);
+      const res = await transactionsAPI.getAll({ per_page: 200 });
+      const txns: Transaction[] = res.data.transactions || [];
+      setRecentTxns(txns.slice(0, 5));
+      buildChartData(txns);
     } catch {
     } finally {
       setIsLoadingTxns(false);
     }
+  };
+
+  const buildChartData = (txns: Transaction[]) => {
+    const now = new Date();
+    const months: {month: string; deposits: number; withdrawals: number}[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({ month: MONTHS[d.getMonth()], deposits: 0, withdrawals: 0 });
+    }
+    txns.forEach(t => {
+      const d = new Date(t.created_at);
+      const monthsAgo = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+      if (monthsAgo < 0 || monthsAgo > 5) return;
+      const idx = 5 - monthsAgo;
+      const credit = ['deposit','transfer_in','loan_disbursement','interest_credit','mobile_money_in','treasury_bill_maturity'].includes(t.transaction_type);
+      if (credit) months[idx].deposits += t.amount;
+      else months[idx].withdrawals += t.amount;
+    });
+    setChartData(months);
   };
 
   const fetchLoansAndTbills = async () => {
@@ -250,7 +264,8 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Transaction Chart */}
+      {/* Transaction Chart — only show when there is real data */}
+      {chartData.some(d => d.deposits > 0 || d.withdrawals > 0) && (
       <div className="card">
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold text-gray-800">Transaction Overview</h3>
@@ -258,7 +273,7 @@ export default function Dashboard() {
         </div>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={mockChartData}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorDeposits" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#2563eb" stopOpacity={0.15} />
@@ -279,6 +294,7 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+      )}
 
       {/* Recent Transactions */}
       <div className="card">
