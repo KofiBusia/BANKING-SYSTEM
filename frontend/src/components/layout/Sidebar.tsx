@@ -15,11 +15,11 @@ const customerNav = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { label: 'My Accounts', icon: CreditCard, href: '/dashboard/accounts' },
   { label: 'Transactions', icon: ArrowLeftRight, href: '/dashboard/transactions' },
-  { label: 'Transfer Money', icon: ArrowLeftRight, href: '/dashboard/transfer' },
+  { label: 'Transfer Money', icon: FileText, href: '/dashboard/transfer' },
   { label: 'Loans', icon: Banknote, href: '/dashboard/loans' },
   { label: 'Treasury Bills', icon: TrendingUp, href: '/dashboard/treasury-bills' },
   { label: 'KYC Verification', icon: Shield, href: '/dashboard/kyc' },
-  { label: 'Profile', icon: User, href: '/dashboard/profile' },
+  { label: 'My Profile', icon: User, href: '/dashboard/profile' },
 ];
 
 const adminNav = [
@@ -28,9 +28,8 @@ const adminNav = [
   { label: 'KYC Review', icon: Shield, href: '/admin/kyc' },
   { label: 'Loan Management', icon: Banknote, href: '/admin/loans' },
   { label: 'Transactions', icon: ArrowLeftRight, href: '/admin/transactions' },
-  { label: 'Staff', icon: Building2, href: '/admin/staff' },
+  { label: 'Staff Management', icon: Building2, href: '/admin/staff' },
   { label: 'Reports', icon: BarChart3, href: '/admin/reports' },
-  { label: 'Settings', icon: Settings, href: '/admin/settings' },
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {

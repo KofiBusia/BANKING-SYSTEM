@@ -1,11 +1,15 @@
 import os
-from flask import Flask, jsonify
+import logging
+from flask import Flask, jsonify, request
 from config import config
 from extensions import db, jwt, bcrypt, cors, mail
 from apscheduler.schedulers.background import BackgroundScheduler
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 import atexit
 
 _scheduler = None
+limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"])
 
 
 def create_app(config_name=None):
@@ -22,8 +26,20 @@ def create_app(config_name=None):
     db.init_app(app)
     jwt.init_app(app)
     bcrypt.init_app(app)
-    cors.init_app(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
+    frontend_url = app.config.get('FRONTEND_URL', '*')
+    cors.init_app(app, resources={r"/api/*": {"origins": [frontend_url, "http://localhost:5173"]}}, supports_credentials=True)
     mail.init_app(app)
+    limiter.init_app(app)
+
+    # Security headers
+    @app.after_request
+    def set_security_headers(response):
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'DENY'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+        return response
 
     # Register blueprints
     from routes.auth import auth_bp
@@ -108,7 +124,6 @@ def create_app(config_name=None):
             'status': 'healthy',
             'bank': app.config.get('BANK_NAME', 'GhanaBank'),
             'version': '1.0.0',
-            'environment': config_name,
         }), 200
 
     @app.route('/api/info')

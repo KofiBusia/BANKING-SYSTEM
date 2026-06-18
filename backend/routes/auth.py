@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from extensions import db, bcrypt
+from app import limiter
 from models import User, Account, KYCInfo, Notification, PasswordResetToken, VerificationCode, AuditLog
 from utils.helpers import (
     validate_ghana_card, validate_ghana_phone, validate_email,
@@ -15,6 +16,7 @@ auth_bp = Blueprint('auth', __name__)
 
 
 @auth_bp.route('/register', methods=['POST'])
+@limiter.limit("10 per hour")
 def register():
     data = request.get_json()
     if not data:
@@ -159,6 +161,7 @@ def register():
 
 
 @auth_bp.route('/login', methods=['POST'])
+@limiter.limit("20 per hour")
 def login():
     data = request.get_json()
     if not data:

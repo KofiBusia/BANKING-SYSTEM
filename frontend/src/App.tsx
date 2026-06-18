@@ -8,19 +8,26 @@ import Login from './pages/public/Login';
 import Register from './pages/public/Register';
 import ForgotPassword from './pages/public/ForgotPassword';
 import ResetPassword from './pages/public/ResetPassword';
+import NotFound from './pages/NotFound';
 
 // Customer pages
 import Dashboard from './pages/customer/Dashboard';
+import Accounts from './pages/customer/Accounts';
 import Transactions from './pages/customer/Transactions';
 import Transfer from './pages/customer/Transfer';
 import Loans from './pages/customer/Loans';
 import KYC from './pages/customer/KYC';
 import TreasuryBills from './pages/customer/TreasuryBills';
+import Profile from './pages/customer/Profile';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCustomers from './pages/admin/AdminCustomers';
+import AdminKYC from './pages/admin/AdminKYC';
 import AdminLoans from './pages/admin/AdminLoans';
+import AdminTransactions from './pages/admin/AdminTransactions';
+import AdminStaff from './pages/admin/AdminStaff';
+import AdminReports from './pages/admin/AdminReports';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -65,24 +72,31 @@ function AppRoutes() {
       {/* Customer routes */}
       <Route path="/dashboard" element={<PrivateRoute><DashboardLayout /></PrivateRoute>}>
         <Route index element={<Dashboard />} />
+        <Route path="accounts" element={<Accounts />} />
         <Route path="transactions" element={<Transactions />} />
         <Route path="transfer" element={<Transfer />} />
         <Route path="loans" element={<Loans />} />
         <Route path="kyc" element={<KYC />} />
         <Route path="treasury-bills" element={<TreasuryBills />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
 
       {/* Admin routes */}
       <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="customers" element={<AdminCustomers />} />
-        <Route path="kyc" element={<AdminCustomers />} />
+        <Route path="kyc" element={<AdminKYC />} />
         <Route path="loans" element={<AdminLoans />} />
+        <Route path="transactions" element={<AdminTransactions />} />
+        <Route path="staff" element={<AdminStaff />} />
+        <Route path="reports" element={<AdminReports />} />
       </Route>
 
-      {/* Redirects */}
+      {/* Root redirect */}
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+
+      {/* 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
