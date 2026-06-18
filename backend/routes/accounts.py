@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
-from models import User, Account, Transaction, Notification
+from models import User, Account, Transaction, Notification, AccountProduct
 from utils.helpers import generate_account_number
 from datetime import datetime
 import uuid
@@ -34,21 +34,33 @@ def open_account():
     user = User.query.get(user_id)
     data = request.get_json()
 
-    account_type = data.get('account_type', 'savings')
-    valid_types = ['savings', 'current', 'fixed_deposit', 'susu', 'student', 'business']
+    product_id = data.get('product_id', '').strip() or None
+    product = None
+    if product_id:
+        product = AccountProduct.query.filter_by(id=product_id, is_active=True).first()
 
+    # Fall back to account_type param if no product
+    account_type = product.account_type if product else data.get('account_type', 'savings')
+    valid_types = ['savings', 'current', 'fixed_deposit', 'susu', 'student', 'business']
     if account_type not in valid_types:
         return jsonify({'success': False, 'message': 'Invalid account type'}), 400
 
-    if user.kyc_status not in ['verified'] and account_type in ['fixed_deposit', 'business']:
-        return jsonify({'success': False, 'message': 'Full KYC verification required to open this account type'}), 403
+    kyc_req = product.kyc_required if product else ('verified' if account_type in ['fixed_deposit', 'business'] else 'basic')
+    kyc_levels = {'basic': 0, 'pending': 1, 'verified': 2}
+    user_level = kyc_levels.get(user.kyc_status, 0)
+    required_level = kyc_levels.get(kyc_req, 0)
+    if user_level < required_level:
+        return jsonify({'success': False, 'message': f'KYC level "{kyc_req}" required to open this account'}), 403
 
-    config = current_app.config.get('ACCOUNT_TYPES', {})
-    type_config = config.get(account_type, {})
+    interest = float(product.interest_rate) if product else 0.0
+    min_bal = float(product.min_balance) if product else 0.0
+    od_enabled = product.overdraft_enabled if product else False
+    od_limit = float(product.overdraft_limit) if product else 0.0
 
     account = Account(
         id=str(uuid.uuid4()),
         user_id=user_id,
+        product_id=product.id if product else None,
         account_number=generate_account_number(account_type),
         account_name=f"{user.first_name} {user.last_name}",
         account_type=account_type,
@@ -56,8 +68,10 @@ def open_account():
         balance=0.00,
         available_balance=0.00,
         ledger_balance=0.00,
-        interest_rate=type_config.get('interest_rate', 0),
-        minimum_balance=type_config.get('min_balance', 0),
+        interest_rate=interest,
+        minimum_balance=min_bal,
+        overdraft_enabled=od_enabled,
+        overdraft_limit=od_limit,
         status='active',
     )
 
@@ -67,7 +81,8 @@ def open_account():
         from datetime import timedelta
         account.fixed_deposit_start_date = datetime.utcnow().date()
         account.maturity_date = (datetime.utcnow() + timedelta(days=30 * term_months)).date()
-        account.interest_rate = 8.5
+        if product:
+            account.interest_rate = float(product.interest_rate)
 
     if account_type == 'susu':
         account.susu_amount = data.get('susu_amount', 50)

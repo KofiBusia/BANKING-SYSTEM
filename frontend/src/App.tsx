@@ -32,6 +32,7 @@ import AdminBranchLeague from './pages/admin/AdminBranchLeague';
 import AdminBranches from './pages/admin/AdminBranches';
 import AdminRMLeague from './pages/admin/AdminRMLeague';
 import AdminTBillRates from './pages/admin/AdminTBillRates';
+import AdminAccountProducts from './pages/admin/AdminAccountProducts';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -94,6 +95,7 @@ function AppRoutes() {
         <Route path="transactions" element={<AdminTransactions />} />
         <Route path="staff" element={<AdminStaff />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="account-products" element={<AdminAccountProducts />} />
         <Route path="tbill-rates" element={<AdminTBillRates />} />
         <Route path="branch-league" element={<AdminBranchLeague />} />
         <Route path="branches" element={<AdminBranches />} />

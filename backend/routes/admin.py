@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db, bcrypt
-from models import User, Account, Transaction, Loan, KYCInfo, KYCDocument, Notification, AuditLog, Branch, Staff, TBillRate
+from models import User, Account, Transaction, Loan, KYCInfo, KYCDocument, Notification, AuditLog, Branch, Staff, TBillRate, AccountProduct
 from utils.helpers import generate_account_number, generate_staff_id
 from utils.email_service import send_kyc_status_email, send_loan_status_email
 from datetime import datetime, date, timedelta
@@ -984,3 +984,90 @@ def update_tbill_rate(rate_id):
     rate.updated_by = admin_id
     db.session.commit()
     return jsonify({'success': True, 'message': 'Rate updated successfully', 'rate': rate.to_dict()}), 200
+
+
+# ── Account Products ─────────────────────────────────────────────
+@admin_bp.route('/account-products', methods=['GET'])
+@jwt_required()
+@require_admin
+def get_account_products():
+    products = AccountProduct.query.order_by(AccountProduct.sort_order).all()
+    result = []
+    for p in products:
+        d = p.to_dict()
+        d['account_count'] = Account.query.filter_by(product_id=p.id).count()
+        result.append(d)
+    return jsonify({'success': True, 'products': result}), 200
+
+
+@admin_bp.route('/account-products', methods=['POST'])
+@jwt_required()
+@require_admin
+def create_account_product():
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    code = data.get('code', '').strip().lower().replace(' ', '_')
+    account_type = data.get('account_type', '').strip()
+
+    if not name or not code or not account_type:
+        return jsonify({'success': False, 'message': 'name, code and account_type are required'}), 400
+
+    valid_types = ['savings', 'current', 'fixed_deposit', 'student', 'business', 'susu']
+    if account_type not in valid_types:
+        return jsonify({'success': False, 'message': f'account_type must be one of: {", ".join(valid_types)}'}), 400
+
+    if AccountProduct.query.filter_by(code=code).first():
+        return jsonify({'success': False, 'message': f'Product code "{code}" already exists'}), 409
+
+    features_raw = data.get('features', [])
+    features_str = '\n'.join(features_raw) if isinstance(features_raw, list) else features_raw
+
+    product = AccountProduct(
+        id=str(uuid.uuid4()),
+        name=name,
+        code=code,
+        account_type=account_type,
+        description=data.get('description', '').strip() or None,
+        features=features_str or None,
+        interest_rate=float(data.get('interest_rate', 0)),
+        min_balance=float(data.get('min_balance', 0)),
+        min_opening_deposit=float(data.get('min_opening_deposit', 0)),
+        monthly_fee=float(data.get('monthly_fee', 0)),
+        overdraft_enabled=bool(data.get('overdraft_enabled', False)),
+        overdraft_limit=float(data.get('overdraft_limit', 0)),
+        kyc_required=data.get('kyc_required', 'basic'),
+        is_active=data.get('is_active', True),
+        sort_order=int(data.get('sort_order', 0)),
+    )
+    db.session.add(product)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Product "{name}" created', 'product': product.to_dict()}), 201
+
+
+@admin_bp.route('/account-products/<product_id>', methods=['PUT'])
+@jwt_required()
+@require_admin
+def update_account_product(product_id):
+    product = AccountProduct.query.get(product_id)
+    if not product:
+        return jsonify({'success': False, 'message': 'Product not found'}), 404
+
+    data = request.get_json()
+    for field in ['name', 'description', 'kyc_required']:
+        if field in data:
+            setattr(product, field, data[field].strip() if data[field] else None)
+    for field in ['interest_rate', 'min_balance', 'min_opening_deposit', 'monthly_fee', 'overdraft_limit']:
+        if field in data:
+            setattr(product, field, float(data[field]))
+    if 'overdraft_enabled' in data:
+        product.overdraft_enabled = bool(data['overdraft_enabled'])
+    if 'is_active' in data:
+        product.is_active = bool(data['is_active'])
+    if 'sort_order' in data:
+        product.sort_order = int(data['sort_order'])
+    if 'features' in data:
+        f = data['features']
+        product.features = '\n'.join(f) if isinstance(f, list) else f
+
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Product updated', 'product': product.to_dict()}), 200

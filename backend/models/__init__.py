@@ -10,10 +10,11 @@ from .branch import Branch
 from .staff import Staff
 from .treasury_bill import TreasuryBill
 from .tbill_rate import TBillRate
+from .account_product import AccountProduct
 
 __all__ = [
     'User', 'Account', 'Transaction', 'KYCInfo', 'KYCDocument',
     'Loan', 'LoanRepayment', 'Notification', 'AuditLog',
     'PasswordResetToken', 'VerificationCode', 'Branch', 'Staff',
-    'TreasuryBill', 'TBillRate'
+    'TreasuryBill', 'TBillRate', 'AccountProduct'
 ]

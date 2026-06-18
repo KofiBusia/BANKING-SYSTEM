@@ -136,8 +136,12 @@ export const adminAPI = {
   getTBillRates: () => API.get('/admin/tbill-rates'),
   createTBillRate: (data: object) => API.post('/admin/tbill-rates', data),
   updateTBillRate: (id: string, data: object) => API.put(`/admin/tbill-rates/${id}`, data),
+  getAccountProducts: () => API.get('/admin/account-products'),
+  createAccountProduct: (data: object) => API.post('/admin/account-products', data),
+  updateAccountProduct: (id: string, data: object) => API.put(`/admin/account-products/${id}`, data),
 };
 
 export const publicAPI = {
   getBranches: () => API.get('/auth/branches'),
+  getAccountProducts: () => API.get('/auth/account-products'),
 };

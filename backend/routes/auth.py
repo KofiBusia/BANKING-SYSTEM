@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from extensions import db, bcrypt, limiter
-from models import User, Account, KYCInfo, Notification, PasswordResetToken, VerificationCode, AuditLog, Branch
+from models import User, Account, KYCInfo, Notification, PasswordResetToken, VerificationCode, AuditLog, Branch, AccountProduct
 from utils.helpers import (
     validate_ghana_card, validate_ghana_phone, validate_email,
     validate_password, generate_account_number, generate_reset_token,
@@ -34,6 +34,7 @@ def register():
     password = data['password']
     ghana_card = data.get('ghana_card_number', '').strip().upper()
     branch_id = data.get('branch_id', '').strip() or None
+    product_id = data.get('product_id', '').strip() or None
 
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email address'}), 400
@@ -79,19 +80,36 @@ def register():
         if branch_id and not Branch.query.filter_by(id=branch_id, status='active').first():
             branch_id = None
 
-        # Create default savings account
+        # Resolve account product
+        product = None
+        if product_id:
+            product = AccountProduct.query.filter_by(id=product_id, is_active=True).first()
+        if not product:
+            product = AccountProduct.query.filter_by(code='savings_basic', is_active=True).first()
+
+        acct_type = product.account_type if product else 'savings'
+        interest = float(product.interest_rate) if product else 3.5
+        min_bal = float(product.min_balance) if product else 0.0
+        od_enabled = product.overdraft_enabled if product else False
+        od_limit = float(product.overdraft_limit) if product else 0.0
+
+        # Create account with chosen product settings
         account = Account(
             id=str(uuid.uuid4()),
             user_id=user.id,
             branch_id=branch_id,
-            account_number=generate_account_number('savings'),
+            product_id=product.id if product else None,
+            account_number=generate_account_number(acct_type),
             account_name=f"{first_name} {last_name}",
-            account_type='savings',
+            account_type=acct_type,
             currency='GHS',
             balance=0.00,
             available_balance=0.00,
             ledger_balance=0.00,
-            interest_rate=3.5,
+            interest_rate=interest,
+            minimum_balance=min_bal,
+            overdraft_enabled=od_enabled,
+            overdraft_limit=od_limit,
             status='active',
         )
         db.session.add(account)
@@ -420,4 +438,13 @@ def list_branches():
     return jsonify({
         'success': True,
         'branches': [b.to_dict() for b in branches],
+    }), 200
+
+
+@auth_bp.route('/account-products', methods=['GET'])
+def list_account_products():
+    products = AccountProduct.query.filter_by(is_active=True).order_by(AccountProduct.sort_order).all()
+    return jsonify({
+        'success': True,
+        'products': [p.to_dict() for p in products],
     }), 200

@@ -12,6 +12,7 @@ class Account(db.Model):
     account_number = db.Column(db.String(20), unique=True, nullable=False, index=True)
     account_name = db.Column(db.String(255), nullable=False)
     account_type = db.Column(db.String(30), nullable=False)  # savings, current, fixed_deposit, susu, student, business
+    product_id = db.Column(db.String(36), db.ForeignKey('account_products.id'), nullable=True)
     currency = db.Column(db.String(3), default='GHS')
 
     balance = db.Column(db.Numeric(15, 2), default=0.00)
@@ -52,6 +53,7 @@ class Account(db.Model):
             'account_number': self.account_number,
             'account_name': self.account_name,
             'account_type': self.account_type,
+            'product_id': self.product_id,
             'currency': self.currency,
             'balance': float(self.balance) if self.balance is not None else 0.0,
             'available_balance': float(self.available_balance) if self.available_balance is not None else 0.0,

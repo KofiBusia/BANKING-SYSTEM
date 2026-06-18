@@ -1,13 +1,23 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Building2, AlertCircle, CheckCircle2, Info, MapPin } from 'lucide-react';
+import { Eye, EyeOff, Building2, AlertCircle, CheckCircle2, Info, MapPin, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { publicAPI } from '../../services/api';
 import type { RegisterData } from '../../types';
 
 interface Branch { id: string; name: string; code: string; city: string; region: string; address: string; opening_hours?: string; }
+interface Product { id: string; name: string; account_type: string; description: string | null; features: string[]; interest_rate: number; min_balance: number; min_opening_deposit: number; monthly_fee: number; kyc_required: string; }
+
+const TYPE_BADGE: Record<string, string> = {
+  savings: 'bg-emerald-100 text-emerald-700',
+  current: 'bg-blue-100 text-blue-700',
+  fixed_deposit: 'bg-purple-100 text-purple-700',
+  student: 'bg-yellow-100 text-yellow-700',
+  business: 'bg-orange-100 text-orange-700',
+  susu: 'bg-pink-100 text-pink-700',
+};
 
 export default function Register() {
   const { register: registerUser } = useAuth();
@@ -18,9 +28,12 @@ export default function Register() {
   const [step, setStep] = useState(1);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     publicAPI.getBranches().then(res => setBranches(res.data.branches || [])).catch(() => {});
+    publicAPI.getAccountProducts().then(res => setProducts(res.data.products || [])).catch(() => {});
   }, []);
 
   const { register, handleSubmit, watch, formState: { errors }, trigger } = useForm<RegisterData>();
@@ -44,6 +57,10 @@ export default function Register() {
         toast.error('Please select a branch to continue');
         return;
       }
+      if (step === 1 && !selectedProduct) {
+        toast.error('Please select an account type to continue');
+        return;
+      }
       setStep(step + 1);
     }
   };
@@ -60,7 +77,11 @@ export default function Register() {
     }
     setIsLoading(true);
     try {
-      await registerUser({ ...data, branch_id: selectedBranch.id });
+      await registerUser({
+        ...data,
+        branch_id: selectedBranch.id,
+        product_id: selectedProduct?.id,
+      });
       toast.success('Account created! Please complete your KYC.');
       navigate('/dashboard');
     } catch (err: any) {
@@ -182,6 +203,44 @@ export default function Register() {
                   )}
                   {!selectedBranch && <p className="text-xs text-gray-400 mt-1">Choose the branch closest to you</p>}
                   {selectedBranch && <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {selectedBranch.name} selected</p>}
+                </div>
+
+                {/* Account type selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    <CreditCard size={14} className="inline mr-1.5 text-gray-500" />
+                    Account Type *
+                  </label>
+                  {products.length === 0 ? (
+                    <div className="input-field text-gray-400 text-sm">Loading account types...</div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto pr-1">
+                      {products.map(p => (
+                        <button key={p.id} type="button"
+                          onClick={() => setSelectedProduct(p)}
+                          className={`text-left px-4 py-3 rounded-xl border-2 transition-all ${selectedProduct?.id === p.id ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-primary-300 bg-white'}`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className={`font-semibold text-sm ${selectedProduct?.id === p.id ? 'text-primary-800' : 'text-gray-800'}`}>{p.name}</p>
+                                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${TYPE_BADGE[p.account_type] || 'bg-gray-100 text-gray-500'}`}>
+                                  {p.account_type.replace('_', ' ')}
+                                </span>
+                              </div>
+                              {p.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{p.description}</p>}
+                              <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                                {p.interest_rate > 0 && <span className="text-emerald-600 font-medium">{p.interest_rate}% p.a.</span>}
+                                {p.min_opening_deposit > 0 && <span>Opens from GHS {p.min_opening_deposit.toLocaleString()}</span>}
+                                {p.monthly_fee === 0 && <span className="text-emerald-600">No monthly fee</span>}
+                              </div>
+                            </div>
+                            {selectedProduct?.id === p.id && <CheckCircle2 size={16} className="text-primary-600 flex-shrink-0 mt-0.5" />}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {selectedProduct && <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {selectedProduct.name} selected</p>}
                 </div>
 
                 <button type="button" onClick={nextStep} className="btn-primary w-full py-3">Continue</button>
