@@ -1,11 +1,12 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db, bcrypt
-from models import User, Account, Transaction, Notification, AuditLog
+from models import User, Account, Transaction, Notification
 from utils.helpers import generate_transaction_reference, get_client_ip
 from utils.email_service import send_transaction_alert
 from datetime import datetime
 import uuid
+import traceback
 
 transactions_bp = Blueprint('transactions', __name__)
 
@@ -42,8 +43,14 @@ def deposit():
     user = User.query.get(user_id)
     data = request.get_json()
 
+    if not data:
+        return jsonify({'success': False, 'message': 'No data provided'}), 400
+
     account_id = data.get('account_id')
-    amount = float(data.get('amount', 0))
+    try:
+        amount = float(data.get('amount', 0))
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Invalid amount'}), 400
     description = data.get('description', 'Cash Deposit')
     channel = data.get('channel', 'online')
 
@@ -53,15 +60,18 @@ def deposit():
     if amount < 1:
         return jsonify({'success': False, 'message': 'Minimum deposit amount is GHS 1.00'}), 400
 
+    if not account_id:
+        return jsonify({'success': False, 'message': 'Account ID is required'}), 400
+
     account = Account.query.filter_by(id=account_id, user_id=user_id, status='active').first()
     if not account:
         return jsonify({'success': False, 'message': 'Account not found or inactive'}), 404
 
     try:
-        balance_before = float(account.balance)
+        balance_before = float(account.balance or 0)
         account.balance = balance_before + amount
-        account.available_balance = float(account.available_balance) + amount
-        account.ledger_balance = float(account.ledger_balance) + amount
+        account.available_balance = float(account.available_balance or 0) + amount
+        account.ledger_balance = float(account.ledger_balance or 0) + amount
         account.last_transaction_date = datetime.utcnow()
 
         txn = Transaction(
@@ -105,8 +115,8 @@ def deposit():
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Deposit error: {str(e)}")
-        return jsonify({'success': False, 'message': 'Deposit failed. Please try again.'}), 500
+        current_app.logger.error(f"Deposit error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'Deposit failed: {str(e)}'}), 500
 
 
 @transactions_bp.route('/withdraw', methods=['POST'])
