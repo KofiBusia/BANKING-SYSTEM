@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { CheckCircle2, Upload, AlertCircle, ChevronDown, ChevronRight, Shield } from 'lucide-react';
 import { kycAPI } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
@@ -24,6 +24,19 @@ interface KYCStatus {
   documents: KYCDocument[];
   missing_items: string[];
 }
+
+const Section = memo(({ id, title, children, activeSection, setActiveSection }: {
+  id: string; title: string; children: React.ReactNode;
+  activeSection: string | null; setActiveSection: (s: string | null) => void;
+}) => (
+  <div className="card overflow-hidden">
+    <button className="w-full flex items-center justify-between p-0 text-left" onClick={() => setActiveSection(activeSection === id ? null : id)}>
+      <h3 className="font-semibold text-gray-800">{title}</h3>
+      {activeSection === id ? <ChevronDown size={18} className="text-gray-400" /> : <ChevronRight size={18} className="text-gray-400" />}
+    </button>
+    {activeSection === id && <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">{children}</div>}
+  </div>
+));
 
 export default function KYC() {
   const { user, refreshUser } = useAuth();
@@ -95,16 +108,6 @@ export default function KYC() {
   const completion = status?.kyc_completion || user?.kyc_completion || 20;
   const kycStatus = status?.kyc_status || user?.kyc_status || 'basic';
 
-  const Section = ({ id, title, children }: { id: string; title: string; children: React.ReactNode }) => (
-    <div className="card overflow-hidden">
-      <button className="w-full flex items-center justify-between p-0 text-left" onClick={() => setActiveSection(activeSection === id ? null : id)}>
-        <h3 className="font-semibold text-gray-800">{title}</h3>
-        {activeSection === id ? <ChevronDown size={18} className="text-gray-400" /> : <ChevronRight size={18} className="text-gray-400" />}
-      </button>
-      {activeSection === id && <div className="mt-4 pt-4 border-t border-gray-100 space-y-4">{children}</div>}
-    </div>
-  );
-
   return (
     <div className="max-w-2xl mx-auto space-y-6 page-enter">
       <div>
@@ -141,7 +144,7 @@ export default function KYC() {
       {kycStatus !== 'verified' && (
         <>
           {/* Personal Info */}
-          <Section id="personal" title="Personal Information">
+          <Section id="personal" title="Personal Information" activeSection={activeSection} setActiveSection={setActiveSection}>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-xs font-medium text-gray-600 mb-1 block">First Name</label><input value={formData.first_name || user?.first_name || ''} onChange={e => set('first_name', e.target.value)} className="input-field text-sm" placeholder="First name" /></div>
               <div><label className="text-xs font-medium text-gray-600 mb-1 block">Last Name</label><input value={formData.last_name || user?.last_name || ''} onChange={e => set('last_name', e.target.value)} className="input-field text-sm" placeholder="Last name" /></div>
@@ -162,7 +165,7 @@ export default function KYC() {
           </Section>
 
           {/* Address */}
-          <Section id="address" title="Address Information">
+          <Section id="address" title="Address Information" activeSection={activeSection} setActiveSection={setActiveSection}>
             <div><label className="text-xs font-medium text-gray-600 mb-1 block">Residential Address</label><textarea value={formData.residential_address || ''} onChange={e => set('residential_address', e.target.value)} className="input-field text-sm" rows={2} placeholder="House No., Street, Area" /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-xs font-medium text-gray-600 mb-1 block">Ghana Post GPS</label><input value={formData.digital_address || ''} onChange={e => set('digital_address', e.target.value)} className="input-field text-sm" placeholder="GA-123-4567" /></div>
@@ -176,7 +179,7 @@ export default function KYC() {
           </Section>
 
           {/* Employment */}
-          <Section id="employment" title="Employment & Income">
+          <Section id="employment" title="Employment & Income" activeSection={activeSection} setActiveSection={setActiveSection}>
             <div><label className="text-xs font-medium text-gray-600 mb-1 block">Employment Status</label><select value={formData.employment_status || ''} onChange={e => set('employment_status', e.target.value)} className="input-field text-sm"><option value="">Select</option><option value="employed">Employed</option><option value="self_employed">Self-Employed</option><option value="unemployed">Unemployed</option><option value="student">Student</option><option value="retired">Retired</option></select></div>
             {['employed','self_employed'].includes(formData.employment_status) && (
               <>
@@ -192,7 +195,7 @@ export default function KYC() {
           </Section>
 
           {/* Next of Kin */}
-          <Section id="nok" title="Next of Kin">
+          <Section id="nok" title="Next of Kin" activeSection={activeSection} setActiveSection={setActiveSection}>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="text-xs font-medium text-gray-600 mb-1 block">First Name</label><input value={formData.nok_first_name || ''} onChange={e => set('nok_first_name', e.target.value)} className="input-field text-sm" /></div>
               <div><label className="text-xs font-medium text-gray-600 mb-1 block">Last Name</label><input value={formData.nok_last_name || ''} onChange={e => set('nok_last_name', e.target.value)} className="input-field text-sm" /></div>
