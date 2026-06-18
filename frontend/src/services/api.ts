@@ -127,4 +127,5 @@ export const adminAPI = {
   createStaff: (data: object) => API.post('/admin/staff', data),
   getReports: (params?: object) => API.get('/admin/reports/summary', { params }),
   depositForCustomer: (data: object) => API.post('/admin/deposit-for-customer', data),
+  getBranchLeague: (period?: string) => API.get('/admin/branch-league', { params: { period } }),
 };

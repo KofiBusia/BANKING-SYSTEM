@@ -28,6 +28,7 @@ import AdminLoans from './pages/admin/AdminLoans';
 import AdminTransactions from './pages/admin/AdminTransactions';
 import AdminStaff from './pages/admin/AdminStaff';
 import AdminReports from './pages/admin/AdminReports';
+import AdminBranchLeague from './pages/admin/AdminBranchLeague';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -90,6 +91,7 @@ function AppRoutes() {
         <Route path="transactions" element={<AdminTransactions />} />
         <Route path="staff" element={<AdminStaff />} />
         <Route path="reports" element={<AdminReports />} />
+        <Route path="branch-league" element={<AdminBranchLeague />} />
       </Route>
 
       {/* Root redirect */}

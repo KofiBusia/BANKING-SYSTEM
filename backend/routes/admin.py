@@ -623,3 +623,88 @@ def admin_deposit():
         'transaction': txn.to_dict(),
         'new_balance': float(account.balance),
     }), 200
+
+
+@admin_bp.route('/branch-league', methods=['GET'])
+@jwt_required()
+@require_admin
+def branch_league():
+    period = request.args.get('period', '30')  # days: 7, 30, 90, 365, all
+    branches = Branch.query.filter_by(status='active').all()
+
+    if period == 'all':
+        start_date = None
+    else:
+        start_date = datetime.utcnow() - timedelta(days=int(period))
+
+    league = []
+    for branch in branches:
+        # Accounts in this branch
+        account_ids = [a.id for a in Account.query.filter_by(branch_id=branch.id).all()]
+        total_accounts = len(account_ids)
+        active_accounts = Account.query.filter_by(branch_id=branch.id, status='active').count()
+
+        # Customers (users with accounts in this branch)
+        customer_ids = db.session.query(Account.user_id).filter_by(branch_id=branch.id).distinct().all()
+        total_customers = len(customer_ids)
+
+        # Transactions for these accounts
+        txn_q = Transaction.query.filter(Transaction.account_id.in_(account_ids)) if account_ids else Transaction.query.filter(False)
+        if start_date:
+            txn_q = txn_q.filter(Transaction.created_at >= start_date)
+        txn_q = txn_q.filter(Transaction.status == 'completed')
+
+        total_txns = txn_q.count()
+
+        def _sum(types):
+            if not account_ids:
+                return 0.0
+            q = db.session.query(db.func.sum(Transaction.amount)).filter(
+                Transaction.account_id.in_(account_ids),
+                Transaction.transaction_type.in_(types),
+                Transaction.status == 'completed'
+            )
+            if start_date:
+                q = q.filter(Transaction.created_at >= start_date)
+            return float(q.scalar() or 0)
+
+        total_deposits = _sum(['deposit', 'mobile_money_in', 'transfer_in'])
+        total_withdrawals = _sum(['withdrawal', 'mobile_money_out', 'transfer_out'])
+        total_volume = total_deposits + total_withdrawals
+        net_flow = total_deposits - total_withdrawals
+
+        # Total balance held
+        total_balance = float(
+            db.session.query(db.func.sum(Account.balance))
+            .filter(Account.branch_id == branch.id, Account.status == 'active')
+            .scalar() or 0
+        )
+
+        league.append({
+            'branch_id': branch.id,
+            'branch_name': branch.name,
+            'branch_code': branch.code,
+            'city': branch.city,
+            'region': branch.region,
+            'total_customers': total_customers,
+            'total_accounts': total_accounts,
+            'active_accounts': active_accounts,
+            'total_transactions': total_txns,
+            'total_deposits': total_deposits,
+            'total_withdrawals': total_withdrawals,
+            'total_volume': total_volume,
+            'net_flow': net_flow,
+            'total_balance': total_balance,
+        })
+
+    # Rank by total transaction volume (desc)
+    league.sort(key=lambda x: x['total_volume'], reverse=True)
+    for i, entry in enumerate(league):
+        entry['rank'] = i + 1
+
+    return jsonify({
+        'success': True,
+        'league': league,
+        'period_days': period,
+        'generated_at': datetime.utcnow().isoformat(),
+    }), 200
