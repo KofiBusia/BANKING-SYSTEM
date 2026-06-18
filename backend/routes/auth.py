@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from extensions import db, bcrypt, limiter
-from models import User, Account, KYCInfo, Notification, PasswordResetToken, VerificationCode, AuditLog
+from models import User, Account, KYCInfo, Notification, PasswordResetToken, VerificationCode, AuditLog, Branch
 from utils.helpers import (
     validate_ghana_card, validate_ghana_phone, validate_email,
     validate_password, generate_account_number, generate_reset_token,
@@ -33,6 +33,7 @@ def register():
     phone = normalize_phone(data['phone'].strip())
     password = data['password']
     ghana_card = data.get('ghana_card_number', '').strip().upper()
+    branch_id = data.get('branch_id', '').strip() or None
 
     if not validate_email(email):
         return jsonify({'success': False, 'message': 'Invalid email address'}), 400
@@ -74,10 +75,15 @@ def register():
         db.session.add(user)
         db.session.flush()
 
+        # Validate branch_id if provided
+        if branch_id and not Branch.query.filter_by(id=branch_id, status='active').first():
+            branch_id = None
+
         # Create default savings account
         account = Account(
             id=str(uuid.uuid4()),
             user_id=user.id,
+            branch_id=branch_id,
             account_number=generate_account_number('savings'),
             account_name=f"{first_name} {last_name}",
             account_type='savings',
@@ -406,3 +412,12 @@ def verify_pin():
         return jsonify({'success': False, 'message': 'Invalid PIN'}), 400
 
     return jsonify({'success': True, 'message': 'PIN verified'}), 200
+
+
+@auth_bp.route('/branches', methods=['GET'])
+def list_branches():
+    branches = Branch.query.filter_by(status='active').order_by(Branch.city).all()
+    return jsonify({
+        'success': True,
+        'branches': [b.to_dict() for b in branches],
+    }), 200

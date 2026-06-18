@@ -128,4 +128,13 @@ export const adminAPI = {
   getReports: (params?: object) => API.get('/admin/reports/summary', { params }),
   depositForCustomer: (data: object) => API.post('/admin/deposit-for-customer', data),
   getBranchLeague: (period?: string) => API.get('/admin/branch-league', { params: { period } }),
+  getBranches: () => API.get('/admin/branches'),
+  createBranch: (data: object) => API.post('/admin/branches', data),
+  updateBranch: (id: string, data: object) => API.put(`/admin/branches/${id}`, data),
+  assignRM: (data: object) => API.post('/admin/rm/assign', data),
+  getRMLeague: (params?: object) => API.get('/admin/rm/league', { params }),
+};
+
+export const publicAPI = {
+  getBranches: () => API.get('/auth/branches'),
 };

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, CreditCard, ArrowLeftRight, Banknote, FileText,
-  User, LogOut, Shield, Users, BarChart3, Building2, X, ChevronRight, TrendingUp, Trophy
+  User, LogOut, Shield, Users, BarChart3, Building2, X, ChevronRight, TrendingUp, Trophy, Award
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { clsx } from '../../utils/helpers';
@@ -28,8 +28,10 @@ const adminNav = [
   { label: 'KYC Review', icon: Shield, href: '/admin/kyc' },
   { label: 'Loan Management', icon: Banknote, href: '/admin/loans' },
   { label: 'Transactions', icon: ArrowLeftRight, href: '/admin/transactions' },
+  { label: 'Branches', icon: Building2, href: '/admin/branches' },
   { label: 'Branch League', icon: Trophy, href: '/admin/branch-league' },
-  { label: 'Staff Management', icon: Building2, href: '/admin/staff' },
+  { label: 'RM League', icon: Award, href: '/admin/rm-league' },
+  { label: 'Staff Management', icon: Users, href: '/admin/staff' },
   { label: 'Reports', icon: BarChart3, href: '/admin/reports' },
 ];
 

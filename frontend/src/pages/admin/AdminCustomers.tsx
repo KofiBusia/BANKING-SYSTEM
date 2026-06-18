@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Eye, Shield, UserCheck, UserX } from 'lucide-react';
+import { Search, Shield, UserCheck } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import { formatCurrency, formatDate, getKYCStatusColor } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -15,8 +15,40 @@ export default function AdminCustomers() {
   const [showKYCReview, setShowKYCReview] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [showRMModal, setShowRMModal] = useState(false);
+  const [rmCustomer, setRMCustomer] = useState<any>(null);
+  const [selectedRM, setSelectedRM] = useState<string>('');
+  const [assigningRM, setAssigningRM] = useState(false);
 
   useEffect(() => { fetchCustomers(); }, [page, kycFilter]);
+  useEffect(() => { fetchStaff(); }, []);
+
+  const fetchStaff = async () => {
+    try {
+      const r = await adminAPI.getStaff();
+      setStaffList(r.data.staff || []);
+    } catch {}
+  };
+
+  const openRMModal = (customer: any) => {
+    setRMCustomer(customer);
+    setSelectedRM(customer.rm_id || '');
+    setShowRMModal(true);
+  };
+
+  const handleAssignRM = async () => {
+    if (!rmCustomer) return;
+    setAssigningRM(true);
+    try {
+      await adminAPI.assignRM({ customer_id: rmCustomer.id, rm_id: selectedRM || null });
+      toast.success(selectedRM ? 'RM assigned successfully' : 'RM removed');
+      setShowRMModal(false);
+      fetchCustomers();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update RM');
+    } finally { setAssigningRM(false); }
+  };
 
   const fetchCustomers = async () => {
     setIsLoading(true);
@@ -119,6 +151,7 @@ export default function AdminCustomers() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => { setSelected(c); setShowKYCReview(true); }} className="p-1.5 hover:bg-blue-100 rounded-lg text-blue-600" title="Review KYC"><Shield size={15} /></button>
+                      <button onClick={() => openRMModal(c)} className={`p-1.5 hover:bg-purple-100 rounded-lg ${c.rm_id ? 'text-purple-600' : 'text-gray-400'}`} title={c.rm_id ? 'Change RM' : 'Assign RM'}><UserCheck size={15} /></button>
                     </div>
                   </td>
                 </tr>
@@ -134,6 +167,45 @@ export default function AdminCustomers() {
           </div>
         )}
       </div>
+
+      {/* RM Assignment Modal */}
+      {showRMModal && rmCustomer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="p-5 border-b border-gray-100 flex justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900">Assign Relationship Manager</h3>
+                <p className="text-xs text-gray-500 mt-0.5">{rmCustomer.full_name}</p>
+              </div>
+              <button onClick={() => setShowRMModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Relationship Manager <span className="text-gray-400 font-normal">(optional)</span></label>
+                <select
+                  value={selectedRM}
+                  onChange={e => setSelectedRM(e.target.value)}
+                  className="input-field text-sm"
+                >
+                  <option value="">— No RM (walk-in / unassigned) —</option>
+                  {staffList.map(s => (
+                    <option key={s.id} value={s.id}>{s.full_name} ({s.role?.replace('_', ' ')})</option>
+                  ))}
+                </select>
+                {!selectedRM && (
+                  <p className="text-xs text-gray-400 mt-1">Leave blank for walk-in customers with no assigned RM.</p>
+                )}
+              </div>
+              <div className="flex gap-3 pt-1">
+                <button onClick={() => setShowRMModal(false)} className="btn-secondary flex-1">Cancel</button>
+                <button onClick={handleAssignRM} disabled={assigningRM} className="btn-primary flex-1">
+                  {assigningRM ? 'Saving...' : selectedRM ? 'Assign RM' : 'Remove RM'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* KYC Review Modal */}
       {showKYCReview && selected && (

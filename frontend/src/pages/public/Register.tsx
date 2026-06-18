@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, Building2, AlertCircle, CheckCircle2, Info } from 'lucide-react';
+import { Eye, EyeOff, Building2, AlertCircle, CheckCircle2, Info, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
+import { publicAPI } from '../../services/api';
 import type { RegisterData } from '../../types';
+
+interface Branch { id: string; name: string; code: string; city: string; region: string; address: string; opening_hours?: string; }
 
 export default function Register() {
   const { register: registerUser } = useAuth();
@@ -13,6 +16,12 @@ export default function Register() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
+
+  useEffect(() => {
+    publicAPI.getBranches().then(res => setBranches(res.data.branches || [])).catch(() => {});
+  }, []);
 
   const { register, handleSubmit, watch, formState: { errors }, trigger } = useForm<RegisterData>();
   const password = watch('password', '');
@@ -30,7 +39,13 @@ export default function Register() {
       ? ['first_name', 'last_name', 'email', 'phone']
       : ['password', 'confirm_password'];
     const valid = await trigger(fields);
-    if (valid) setStep(step + 1);
+    if (valid) {
+      if (step === 1 && !selectedBranch) {
+        toast.error('Please select a branch to continue');
+        return;
+      }
+      setStep(step + 1);
+    }
   };
 
   const onSubmit = async (data: RegisterData) => {
@@ -38,9 +53,14 @@ export default function Register() {
       toast.error('Passwords do not match');
       return;
     }
+    if (!selectedBranch) {
+      toast.error('Please select a branch');
+      setStep(1);
+      return;
+    }
     setIsLoading(true);
     try {
-      await registerUser(data);
+      await registerUser({ ...data, branch_id: selectedBranch.id });
       toast.success('Account created! Please complete your KYC.');
       navigate('/dashboard');
     } catch (err: any) {
@@ -136,6 +156,34 @@ export default function Register() {
                   <input {...register('phone', { required: 'Phone required', pattern: { value: /^(\+?233|0)[2-9]\d{8}$/, message: 'Enter valid Ghana number e.g. 0241234567' } })} type="tel" className="input-field" placeholder="0241234567 or +233241234567" />
                   {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
                 </div>
+
+                {/* Branch selector */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Branch *</label>
+                  {branches.length === 0 ? (
+                    <div className="input-field text-gray-400 text-sm">Loading branches...</div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1">
+                      {branches.map(b => (
+                        <button key={b.id} type="button"
+                          onClick={() => setSelectedBranch(b)}
+                          className={`text-left px-4 py-3 rounded-xl border-2 transition-all ${selectedBranch?.id === b.id ? 'border-primary-600 bg-primary-50' : 'border-gray-200 hover:border-primary-300 bg-white'}`}>
+                          <div className="flex items-start gap-2">
+                            <MapPin size={15} className={`mt-0.5 flex-shrink-0 ${selectedBranch?.id === b.id ? 'text-primary-600' : 'text-gray-400'}`} />
+                            <div>
+                              <p className={`font-semibold text-sm ${selectedBranch?.id === b.id ? 'text-primary-800' : 'text-gray-800'}`}>{b.name}</p>
+                              <p className="text-xs text-gray-500">{b.address}</p>
+                              {b.opening_hours && <p className="text-xs text-gray-400 mt-0.5">{b.opening_hours}</p>}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {!selectedBranch && <p className="text-xs text-gray-400 mt-1">Choose the branch closest to you</p>}
+                  {selectedBranch && <p className="text-xs text-emerald-600 mt-1 flex items-center gap-1"><CheckCircle2 size={12} /> {selectedBranch.name} selected</p>}
+                </div>
+
                 <button type="button" onClick={nextStep} className="btn-primary w-full py-3">Continue</button>
               </div>
             )}

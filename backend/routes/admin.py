@@ -708,3 +708,201 @@ def branch_league():
         'period_days': period,
         'generated_at': datetime.utcnow().isoformat(),
     }), 200
+
+
+# ── Branch Management ────────────────────────────────────────────
+@admin_bp.route('/branches', methods=['GET'])
+@jwt_required()
+@require_admin
+def get_branches():
+    branches = Branch.query.order_by(Branch.city).all()
+    result = []
+    for b in branches:
+        customer_count = db.session.query(Account.user_id).filter_by(branch_id=b.id).distinct().count()
+        account_count = Account.query.filter_by(branch_id=b.id).count()
+        result.append({**b.to_dict(), 'customer_count': customer_count, 'account_count': account_count})
+    return jsonify({'success': True, 'branches': result}), 200
+
+
+@admin_bp.route('/branches', methods=['POST'])
+@jwt_required()
+@require_admin
+def create_branch():
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    code = data.get('code', '').strip().upper()
+    address = data.get('address', '').strip()
+    city = data.get('city', '').strip()
+    region = data.get('region', '').strip()
+
+    if not all([name, code, address, city, region]):
+        return jsonify({'success': False, 'message': 'Name, code, address, city and region are required'}), 400
+
+    if Branch.query.filter_by(code=code).first():
+        return jsonify({'success': False, 'message': f'Branch code {code} already exists'}), 409
+
+    branch = Branch(
+        id=str(uuid.uuid4()),
+        name=name,
+        code=code,
+        address=address,
+        digital_address=data.get('digital_address', '').strip() or None,
+        city=city,
+        region=region,
+        phone=data.get('phone', '').strip() or None,
+        email=data.get('email', '').strip().lower() or None,
+        opening_hours=data.get('opening_hours', '').strip() or None,
+        status='active',
+    )
+    db.session.add(branch)
+    db.session.commit()
+    return jsonify({'success': True, 'message': f'Branch "{name}" created successfully', 'branch': branch.to_dict()}), 201
+
+
+# ── Relationship Manager ─────────────────────────────────────────
+@admin_bp.route('/rm/assign', methods=['POST'])
+@jwt_required()
+@require_admin
+def assign_rm():
+    data = request.get_json()
+    customer_id = data.get('customer_id')
+    rm_id = data.get('rm_id')  # None to unassign
+
+    customer = User.query.filter_by(id=customer_id, role='customer').first()
+    if not customer:
+        return jsonify({'success': False, 'message': 'Customer not found'}), 404
+
+    if rm_id:
+        rm = User.query.filter(User.id == rm_id, User.role.in_(['teller', 'manager', 'admin', 'super_admin'])).first()
+        if not rm:
+            return jsonify({'success': False, 'message': 'Staff member not found'}), 404
+
+    customer.rm_id = rm_id
+    db.session.commit()
+    msg = f'RM assigned to {customer.full_name}' if rm_id else f'RM removed from {customer.full_name}'
+    return jsonify({'success': True, 'message': msg}), 200
+
+
+@admin_bp.route('/rm/league', methods=['GET'])
+@jwt_required()
+@require_admin
+def rm_league():
+    period = request.args.get('period')
+    month = request.args.get('month', type=int)
+    year = request.args.get('year', type=int)
+
+    start_date = None
+    end_date = None
+
+    if month and year:
+        # Specific calendar month
+        import calendar
+        start_date = datetime(year, month, 1)
+        last_day = calendar.monthrange(year, month)[1]
+        end_date = datetime(year, month, last_day, 23, 59, 59)
+        period = f'{year}-{month:02d}'
+    elif period and period != 'all':
+        start_date = datetime.utcnow() - timedelta(days=int(period))
+    else:
+        period = period or 'all'
+
+    # Get all staff who have at least one customer assigned (or all staff)
+    staff_users = User.query.filter(
+        User.role.in_(['teller', 'manager', 'admin', 'super_admin'])
+    ).all()
+
+    league = []
+    for rm in staff_users:
+        customers = User.query.filter_by(rm_id=rm.id, role='customer').all()
+        total_customers = len(customers)
+
+        # New customers assigned in period
+        if start_date:
+            new_customers = 0  # rm_id was just added, no created_at on assignment
+        else:
+            new_customers = total_customers
+
+        customer_ids = [c.id for c in customers]
+
+        if customer_ids:
+            account_ids = [a.id for a in Account.query.filter(Account.user_id.in_(customer_ids)).all()]
+        else:
+            account_ids = []
+
+        def _rm_sum(types):
+            if not account_ids:
+                return 0.0
+            q = db.session.query(db.func.sum(Transaction.amount)).filter(
+                Transaction.account_id.in_(account_ids),
+                Transaction.transaction_type.in_(types),
+                Transaction.status == 'completed'
+            )
+            if start_date:
+                q = q.filter(Transaction.created_at >= start_date)
+            if end_date:
+                q = q.filter(Transaction.created_at <= end_date)
+            return float(q.scalar() or 0)
+
+        total_deposits = _rm_sum(['deposit', 'mobile_money_in', 'transfer_in'])
+        total_withdrawals = _rm_sum(['withdrawal', 'mobile_money_out', 'transfer_out'])
+        total_volume = total_deposits + total_withdrawals
+        net_flow = total_deposits - total_withdrawals
+
+        txn_count = 0
+        if account_ids:
+            q = Transaction.query.filter(
+                Transaction.account_id.in_(account_ids),
+                Transaction.status == 'completed'
+            )
+            if start_date:
+                q = q.filter(Transaction.created_at >= start_date)
+            if end_date:
+                q = q.filter(Transaction.created_at <= end_date)
+            txn_count = q.count()
+
+        total_balance = float(
+            db.session.query(db.func.sum(Account.balance))
+            .filter(Account.user_id.in_(customer_ids), Account.status == 'active')
+            .scalar() or 0
+        ) if customer_ids else 0.0
+
+        league.append({
+            'rm_id': rm.id,
+            'rm_name': rm.full_name,
+            'rm_role': rm.role,
+            'total_customers': total_customers,
+            'total_transactions': txn_count,
+            'total_deposits': total_deposits,
+            'total_withdrawals': total_withdrawals,
+            'total_volume': total_volume,
+            'net_flow': net_flow,
+            'portfolio_balance': total_balance,
+        })
+
+    league.sort(key=lambda x: x['total_volume'], reverse=True)
+    for i, e in enumerate(league):
+        e['rank'] = i + 1
+
+    return jsonify({
+        'success': True,
+        'league': league,
+        'period_days': period,
+        'generated_at': datetime.utcnow().isoformat(),
+    }), 200
+
+
+@admin_bp.route('/branches/<branch_id>', methods=['PUT'])
+@jwt_required()
+@require_admin
+def update_branch(branch_id):
+    branch = Branch.query.get(branch_id)
+    if not branch:
+        return jsonify({'success': False, 'message': 'Branch not found'}), 404
+    data = request.get_json()
+    for field in ['name', 'address', 'digital_address', 'city', 'region', 'phone', 'email', 'opening_hours']:
+        if field in data:
+            setattr(branch, field, data[field].strip() if data[field] else None)
+    if 'status' in data and data['status'] in ['active', 'inactive']:
+        branch.status = data['status']
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Branch updated', 'branch': branch.to_dict()}), 200

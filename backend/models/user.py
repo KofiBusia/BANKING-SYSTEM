@@ -28,6 +28,8 @@ class User(db.Model):
     two_factor_enabled = db.Column(db.Boolean, default=False)
     two_factor_secret = db.Column(db.String(32))
 
+    rm_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=True)
+
     transaction_pin = db.Column(db.String(255))
     pin_set = db.Column(db.Boolean, default=False)
 
@@ -73,6 +75,7 @@ class User(db.Model):
             'phone_verified': self.phone_verified,
             'two_factor_enabled': self.two_factor_enabled,
             'pin_set': self.pin_set,
+            'rm_id': self.rm_id,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
