@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db, bcrypt
-from models import User, Account, Transaction, Loan, KYCInfo, KYCDocument, Notification, AuditLog, Branch, Staff
+from models import User, Account, Transaction, Loan, KYCInfo, KYCDocument, Notification, AuditLog, Branch, Staff, TBillRate
 from utils.helpers import generate_account_number, generate_staff_id
 from utils.email_service import send_kyc_status_email, send_loan_status_email
 from datetime import datetime, date, timedelta
@@ -906,3 +906,81 @@ def update_branch(branch_id):
         branch.status = data['status']
     db.session.commit()
     return jsonify({'success': True, 'message': 'Branch updated', 'branch': branch.to_dict()}), 200
+
+
+# ── Treasury Bill Rates ──────────────────────────────────────────
+@admin_bp.route('/tbill-rates', methods=['GET'])
+@jwt_required()
+@require_admin
+def get_tbill_rates():
+    rates = TBillRate.query.order_by(TBillRate.tenure_days).all()
+    return jsonify({'success': True, 'rates': [r.to_dict() for r in rates]}), 200
+
+
+@admin_bp.route('/tbill-rates', methods=['POST'])
+@jwt_required()
+@require_admin
+def create_tbill_rate():
+    admin_id = get_jwt_identity()
+    data = request.get_json()
+
+    tenure_days = data.get('tenure_days')
+    annual_rate = data.get('annual_rate')
+    label = data.get('label', '').strip()
+
+    if not tenure_days or not annual_rate or not label:
+        return jsonify({'success': False, 'message': 'tenure_days, annual_rate and label are required'}), 400
+
+    try:
+        tenure_days = int(tenure_days)
+        annual_rate = float(annual_rate)
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'message': 'Invalid numeric values'}), 400
+
+    if TBillRate.query.filter_by(tenure_days=tenure_days).first():
+        return jsonify({'success': False, 'message': f'A rate for {tenure_days}-day tenure already exists'}), 409
+
+    from datetime import date as _date
+    rate = TBillRate(
+        id=str(uuid.uuid4()),
+        tenure_days=tenure_days,
+        label=label,
+        annual_rate=annual_rate,
+        withholding_tax_rate=float(data.get('withholding_tax_rate', 8.0)),
+        min_investment=float(data.get('min_investment', 100.0)),
+        is_active=data.get('is_active', True),
+        effective_date=_date.today(),
+        updated_by=admin_id,
+    )
+    db.session.add(rate)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Rate created', 'rate': rate.to_dict()}), 201
+
+
+@admin_bp.route('/tbill-rates/<rate_id>', methods=['PUT'])
+@jwt_required()
+@require_admin
+def update_tbill_rate(rate_id):
+    admin_id = get_jwt_identity()
+    rate = TBillRate.query.get(rate_id)
+    if not rate:
+        return jsonify({'success': False, 'message': 'Rate not found'}), 404
+
+    data = request.get_json()
+    from datetime import date as _date
+
+    if 'annual_rate' in data:
+        rate.annual_rate = float(data['annual_rate'])
+    if 'withholding_tax_rate' in data:
+        rate.withholding_tax_rate = float(data['withholding_tax_rate'])
+    if 'min_investment' in data:
+        rate.min_investment = float(data['min_investment'])
+    if 'label' in data:
+        rate.label = data['label'].strip()
+    if 'is_active' in data:
+        rate.is_active = bool(data['is_active'])
+
+    rate.effective_date = _date.today()
+    rate.updated_by = admin_id
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Rate updated successfully', 'rate': rate.to_dict()}), 200

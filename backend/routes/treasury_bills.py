@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from extensions import db
-from models import User, Account, Transaction, Notification, TreasuryBill
+from models import User, Account, Transaction, Notification, TreasuryBill, TBillRate
 from utils.helpers import generate_transaction_reference
 from utils.email_service import send_treasury_bill_email
 from datetime import datetime, date, timedelta
@@ -12,14 +12,16 @@ import string
 
 tbills_bp = Blueprint('treasury_bills', __name__)
 
-# Current BOG T-bill rates (Ghana 2024)
-TBILL_RATES = {
-    91: 26.5,
-    182: 27.8,
-    364: 29.5,
-}
-WITHHOLDING_TAX_RATE = 8.0  # 8% WHT on T-bill interest in Ghana
-MIN_INVESTMENT = 100.0
+
+def _get_active_rates():
+    """Return {tenure_days: TBillRate} for all active rates."""
+    rates = TBillRate.query.filter_by(is_active=True).all()
+    return {r.tenure_days: r for r in rates}
+
+
+def _get_rate(tenure_days):
+    """Return TBillRate for the given tenure, or None."""
+    return TBillRate.query.filter_by(tenure_days=tenure_days, is_active=True).first()
 
 
 def generate_tbill_reference():
@@ -28,10 +30,10 @@ def generate_tbill_reference():
     return f'TB{date_str}{random_part}'
 
 
-def calculate_tbill_returns(principal: float, annual_rate: float, tenure_days: int) -> dict:
+def calculate_tbill_returns(principal: float, annual_rate: float, tenure_days: int, wht_rate: float = 8.0) -> dict:
     # Ghana T-bills use simple interest (discount basis)
     gross_interest = principal * (annual_rate / 100) * (tenure_days / 364)
-    wht = gross_interest * (WITHHOLDING_TAX_RATE / 100)
+    wht = gross_interest * (wht_rate / 100)
     net_interest = gross_interest - wht
     maturity_value = principal + net_interest
     effective_rate = (net_interest / principal) * (364 / tenure_days) * 100
@@ -47,16 +49,21 @@ def calculate_tbill_returns(principal: float, annual_rate: float, tenure_days: i
 
 @tbills_bp.route('/rates', methods=['GET'])
 def get_rates():
+    active_rates = TBillRate.query.filter_by(is_active=True).order_by(TBillRate.tenure_days).all()
     rates = []
-    for tenure, rate in TBILL_RATES.items():
-        sample = calculate_tbill_returns(1000, rate, tenure)
+    for r in active_rates:
+        annual_rate = float(r.annual_rate)
+        wht = float(r.withholding_tax_rate)
+        min_inv = float(r.min_investment)
+        sample = calculate_tbill_returns(1000, annual_rate, r.tenure_days, wht)
         rates.append({
-            'tenure_days': tenure,
-            'tenure_label': f'{tenure}-Day',
-            'annual_rate': rate,
-            'withholding_tax': WITHHOLDING_TAX_RATE,
-            'min_investment': MIN_INVESTMENT,
+            'tenure_days': r.tenure_days,
+            'tenure_label': r.label,
+            'annual_rate': annual_rate,
+            'withholding_tax': wht,
+            'min_investment': min_inv,
             'sample_on_1000': sample,
+            'effective_date': r.effective_date.isoformat() if r.effective_date else None,
         })
     return jsonify({'success': True, 'rates': rates, 'currency': 'GHS'}), 200
 
@@ -68,14 +75,17 @@ def calculate():
     principal = float(data.get('principal', 0))
     tenure_days = int(data.get('tenure_days', 364))
 
-    if principal < MIN_INVESTMENT:
-        return jsonify({'success': False, 'message': f'Minimum investment is GHS {MIN_INVESTMENT:,.2f}'}), 400
+    rate_obj = _get_rate(tenure_days)
+    if not rate_obj:
+        return jsonify({'success': False, 'message': 'Selected tenure is not currently available'}), 400
 
-    if tenure_days not in TBILL_RATES:
-        return jsonify({'success': False, 'message': 'Invalid tenure. Choose 91, 182, or 364 days'}), 400
+    min_inv = float(rate_obj.min_investment)
+    if principal < min_inv:
+        return jsonify({'success': False, 'message': f'Minimum investment is GHS {min_inv:,.2f}'}), 400
 
-    annual_rate = TBILL_RATES[tenure_days]
-    result = calculate_tbill_returns(principal, annual_rate, tenure_days)
+    annual_rate = float(rate_obj.annual_rate)
+    wht = float(rate_obj.withholding_tax_rate)
+    result = calculate_tbill_returns(principal, annual_rate, tenure_days, wht)
     maturity_date = (date.today() + timedelta(days=tenure_days)).isoformat()
 
     return jsonify({
@@ -102,11 +112,13 @@ def invest():
     principal = float(data.get('principal', 0))
     tenure_days = int(data.get('tenure_days', 364))
 
-    if principal < MIN_INVESTMENT:
-        return jsonify({'success': False, 'message': f'Minimum investment is GHS {MIN_INVESTMENT:,.2f}'}), 400
+    rate_obj = _get_rate(tenure_days)
+    if not rate_obj:
+        return jsonify({'success': False, 'message': 'Selected tenure is not currently available'}), 400
 
-    if tenure_days not in TBILL_RATES:
-        return jsonify({'success': False, 'message': 'Invalid tenure. Choose 91, 182, or 364 days'}), 400
+    min_inv = float(rate_obj.min_investment)
+    if principal < min_inv:
+        return jsonify({'success': False, 'message': f'Minimum investment is GHS {min_inv:,.2f}'}), 400
 
     account = Account.query.filter_by(id=account_id, user_id=user_id, status='active').first()
     if not account:
@@ -115,8 +127,9 @@ def invest():
     if float(account.available_balance) < principal:
         return jsonify({'success': False, 'message': 'Insufficient funds'}), 400
 
-    annual_rate = TBILL_RATES[tenure_days]
-    returns = calculate_tbill_returns(principal, annual_rate, tenure_days)
+    annual_rate = float(rate_obj.annual_rate)
+    wht_rate = float(rate_obj.withholding_tax_rate)
+    returns = calculate_tbill_returns(principal, annual_rate, tenure_days, wht_rate)
     investment_date = date.today()
     maturity_date = investment_date + timedelta(days=tenure_days)
 
@@ -226,11 +239,13 @@ def rollover(tbill_id):
     tenure_days = int(data.get('tenure_days', tbill.tenure_days))
     rollover_principal = float(data.get('principal', tbill.maturity_value))
 
-    if tenure_days not in TBILL_RATES:
-        return jsonify({'success': False, 'message': 'Invalid tenure'}), 400
+    rate_obj = _get_rate(tenure_days)
+    if not rate_obj:
+        return jsonify({'success': False, 'message': 'Selected tenure is not currently available'}), 400
 
-    annual_rate = TBILL_RATES[tenure_days]
-    returns = calculate_tbill_returns(rollover_principal, annual_rate, tenure_days)
+    annual_rate = float(rate_obj.annual_rate)
+    wht_rate = float(rate_obj.withholding_tax_rate)
+    returns = calculate_tbill_returns(rollover_principal, annual_rate, tenure_days, wht_rate)
     investment_date = date.today()
     maturity_date = investment_date + timedelta(days=tenure_days)
 

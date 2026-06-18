@@ -133,6 +133,9 @@ export const adminAPI = {
   updateBranch: (id: string, data: object) => API.put(`/admin/branches/${id}`, data),
   assignRM: (data: object) => API.post('/admin/rm/assign', data),
   getRMLeague: (params?: object) => API.get('/admin/rm/league', { params }),
+  getTBillRates: () => API.get('/admin/tbill-rates'),
+  createTBillRate: (data: object) => API.post('/admin/tbill-rates', data),
+  updateTBillRate: (id: string, data: object) => API.put(`/admin/tbill-rates/${id}`, data),
 };
 
 export const publicAPI = {

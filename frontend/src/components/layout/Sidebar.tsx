@@ -29,6 +29,7 @@ const adminNav = [
   { label: 'Loan Management', icon: Banknote, href: '/admin/loans' },
   { label: 'Transactions', icon: ArrowLeftRight, href: '/admin/transactions' },
   { label: 'Branches', icon: Building2, href: '/admin/branches' },
+  { label: 'T-Bill Rates', icon: TrendingUp, href: '/admin/tbill-rates' },
   { label: 'Branch League', icon: Trophy, href: '/admin/branch-league' },
   { label: 'RM League', icon: Award, href: '/admin/rm-league' },
   { label: 'Staff Management', icon: Users, href: '/admin/staff' },
