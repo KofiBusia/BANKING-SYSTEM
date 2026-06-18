@@ -2,14 +2,11 @@ import os
 import logging
 from flask import Flask, jsonify, request
 from config import config
-from extensions import db, jwt, bcrypt, cors, mail
+from extensions import db, jwt, bcrypt, cors, mail, limiter
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 import atexit
 
 _scheduler = None
-limiter = Limiter(key_func=get_remote_address, default_limits=["200 per minute"])
 
 
 def create_app(config_name=None):

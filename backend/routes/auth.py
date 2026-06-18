@@ -1,7 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
-from extensions import db, bcrypt
-from app import limiter
+from extensions import db, bcrypt, limiter
 from models import User, Account, KYCInfo, Notification, PasswordResetToken, VerificationCode, AuditLog
 from utils.helpers import (
     validate_ghana_card, validate_ghana_phone, validate_email,
