@@ -461,7 +461,7 @@ def create_staff():
 
     email = data.get('email', '').strip().lower()
     phone = normalize_phone(data.get('phone', '').strip())
-    password = data.get('password', 'GhanaBank@2024')
+    password = data.get('password', 'Crestline@2024')
     role = data.get('role', 'teller')
 
     if role not in ['teller', 'manager', 'admin']:

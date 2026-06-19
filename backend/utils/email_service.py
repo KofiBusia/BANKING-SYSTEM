@@ -17,7 +17,7 @@ def send_email(to: str, subject: str, html_body: str, text_body: str = None):
 
 
 def send_welcome_email(user, temp_password: str = None):
-    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    bank_name = current_app.config.get('BANK_NAME', 'Crestline Solutions')
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -58,7 +58,7 @@ def send_welcome_email(user, temp_password: str = None):
         </div>
         <p>To complete your KYC, log in to your account and navigate to <strong>Profile > Complete KYC</strong>.</p>
         <a href="{current_app.config.get('FRONTEND_URL', 'http://localhost:5173')}/dashboard/kyc" class="btn">Complete KYC Now</a>
-        <p style="color:#666;font-size:13px;">If you did not create this account, please contact us immediately at <a href="mailto:support@ghanabank.com">support@ghanabank.com</a></p>
+        <p style="color:#666;font-size:13px;">If you did not create this account, please contact us immediately at <a href="mailto:support@crestlinesolutions.com">support@crestlinesolutions.com</a></p>
       </div>
       <div class="footer">
         <p>&copy; 2024 {bank_name}. All rights reserved.</p>
@@ -71,7 +71,7 @@ def send_welcome_email(user, temp_password: str = None):
 
 
 def send_transaction_alert(user, transaction, account):
-    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    bank_name = current_app.config.get('BANK_NAME', 'Crestline Solutions')
     is_credit = transaction.transaction_type in ['deposit', 'transfer_in', 'loan_disbursement', 'interest_credit', 'mobile_money_in']
     color = '#10B981' if is_credit else '#EF4444'
     sign = '+' if is_credit else '-'
@@ -133,7 +133,7 @@ def send_transaction_alert(user, transaction, account):
           <span class="label">Date & Time</span>
           <span class="value">{transaction.created_at.strftime('%d %b %Y %H:%M:%S') if transaction.created_at else 'N/A'}</span>
         </div>
-        <p style="color:#666;font-size:13px;margin-top:20px">If you did not authorize this transaction, please contact us immediately on <strong>0800 000 000</strong> or email <a href="mailto:support@ghanabank.com">support@ghanabank.com</a></p>
+        <p style="color:#666;font-size:13px;margin-top:20px">If you did not authorize this transaction, please contact us immediately on <strong>0800 000 000</strong> or email <a href="mailto:support@crestlinesolutions.com">support@crestlinesolutions.com</a></p>
       </div>
       <div class="footer">
         <p>&copy; 2024 {bank_name}. All rights reserved.</p>
@@ -146,7 +146,7 @@ def send_transaction_alert(user, transaction, account):
 
 
 def send_password_reset_email(user, reset_token: str):
-    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    bank_name = current_app.config.get('BANK_NAME', 'Crestline Solutions')
     frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
     reset_url = f"{frontend_url}/reset-password?token={reset_token}"
 
@@ -191,7 +191,7 @@ def send_password_reset_email(user, reset_token: str):
 
 
 def send_kyc_status_email(user, status: str, rejection_reason: str = None):
-    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    bank_name = current_app.config.get('BANK_NAME', 'Crestline Solutions')
     if status == 'verified':
         subject = f'{bank_name} - KYC Verification Approved!'
         message = f"""
@@ -242,7 +242,7 @@ def send_kyc_status_email(user, status: str, rejection_reason: str = None):
 
 
 def send_loan_status_email(user, loan, status: str):
-    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    bank_name = current_app.config.get('BANK_NAME', 'Crestline Solutions')
     status_messages = {
         'approved': f'Your loan of GHS {float(loan.amount_approved or loan.amount_requested):,.2f} has been approved!',
         'rejected': f'Your loan application has been reviewed and unfortunately could not be approved at this time.',
@@ -285,7 +285,7 @@ def send_loan_status_email(user, loan, status: str):
 
 
 def send_treasury_bill_email(user, tbill, event_type: str):
-    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    bank_name = current_app.config.get('BANK_NAME', 'Crestline Solutions')
     frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
 
     if event_type == 'purchased':
@@ -398,7 +398,7 @@ def send_treasury_bill_email(user, tbill, event_type: str):
 
 
 def send_loan_due_alert(user, loan, repayment):
-    bank_name = current_app.config.get('BANK_NAME', 'GhanaBank')
+    bank_name = current_app.config.get('BANK_NAME', 'Crestline Solutions')
     frontend_url = current_app.config.get('FRONTEND_URL', 'http://localhost:5173')
     from datetime import date
     today = date.today()
@@ -463,7 +463,7 @@ def send_loan_due_alert(user, loan, repayment):
       </div>
       <div class="footer">
         <p>&copy; 2024 {bank_name}. All rights reserved.</p>
-        <p>For assistance, call 0800 000 000 or email support@ghanabank.com</p>
+        <p>For assistance, call 0800 000 000 or email support@crestlinesolutions.com</p>
       </div>
     </div></body></html>
     """

@@ -15,7 +15,7 @@ export default function DashboardLayout() {
           <Outlet />
         </main>
         <footer className="text-center py-4 text-xs text-gray-400 border-t border-gray-100 bg-white">
-          © 2024 GhanaBank. All rights reserved. Regulated by Bank of Ghana.
+          © 2026 Crestline Solutions LTD. All rights reserved. Regulated by Bank of Ghana.
         </footer>
       </div>
     </div>

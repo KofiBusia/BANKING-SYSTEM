@@ -1,7 +1,7 @@
 {
-  "name": "ghanabank-backend",
+  "name": "crestline-backend",
   "version": "1.0.0",
-  "description": "World-Class Banking Software API - Ghana Market",
+  "description": "Crestline Solutions LTD - Banking Software API",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",

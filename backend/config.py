@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'ghanabank-dev-secret-key')
-    _db_url = os.environ.get('DATABASE_URL', 'sqlite:///ghanabank.db')
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'crestline-dev-secret-key')
+    _db_url = os.environ.get('DATABASE_URL', 'sqlite:///crestline.db')
     # Fix for SQLAlchemy compatibility with postgres:// URLs
     if _db_url.startswith('postgres://'):
         _db_url = _db_url.replace('postgres://', 'postgresql://', 1)
@@ -17,7 +17,7 @@ class Config:
         'pool_recycle': 300,
     }
 
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'ghanabank-jwt-secret')
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'crestline-jwt-secret')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=24)
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 
@@ -26,16 +26,16 @@ class Config:
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'True') == 'True'
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'GhanaBank <noreply@ghanabank.com>')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'Crestline Solutions <noreply@crestlinesolutions.com>')
 
     UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
     MAX_CONTENT_LENGTH = 10 * 1024 * 1024  # 10MB max upload
 
     FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 
-    BANK_NAME = os.environ.get('BANK_NAME', 'GhanaBank')
-    BANK_CODE = os.environ.get('BANK_CODE', 'GHB')
-    BANK_SWIFT = os.environ.get('BANK_SWIFT', 'GHBKGHAC')
+    BANK_NAME = os.environ.get('BANK_NAME', 'Crestline Solutions LTD')
+    BANK_CODE = os.environ.get('BANK_CODE', 'CSL')
+    BANK_SWIFT = os.environ.get('BANK_SWIFT', 'CSLKGHAC')
     BANK_SORT_CODE = os.environ.get('BANK_SORT_CODE', '040100')
 
     GHANA_REGIONS = [

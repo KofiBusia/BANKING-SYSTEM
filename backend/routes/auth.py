@@ -125,7 +125,7 @@ def register():
         notification = Notification(
             id=str(uuid.uuid4()),
             user_id=user.id,
-            title='Welcome to GhanaBank!',
+            title='Welcome to Crestline Solutions!',
             message=f'Hello {first_name}, your account has been created successfully. Please complete your KYC to access all features.',
             type='info',
             category='account',

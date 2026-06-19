@@ -65,8 +65,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Building2 size={20} className="text-primary-900" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">GhanaBank</h1>
-              <p className="text-xs text-blue-300 leading-tight">Your Financial Partner</p>
+              <h1 className="text-lg font-bold leading-tight">Crestline</h1>
+              <p className="text-xs text-blue-300 leading-tight">Solutions LTD</p>
             </div>
           </div>
           <button onClick={onClose} className="lg:hidden text-blue-300 hover:text-white">

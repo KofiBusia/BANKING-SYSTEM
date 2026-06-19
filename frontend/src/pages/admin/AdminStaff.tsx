@@ -126,7 +126,7 @@ export default function AdminStaff() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input {...register('email', { required: true })} type="email" className="input-field" placeholder="staff@ghanabank.com" />
+                <input {...register('email', { required: true })} type="email" className="input-field" placeholder="staff@crestlinesolutions.com" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>

@@ -105,7 +105,7 @@ export default function Register() {
             <div className="w-10 h-10 bg-gold-400 rounded-xl flex items-center justify-center">
               <Building2 size={22} className="text-primary-900" />
             </div>
-            <span className="text-2xl font-bold text-white">GhanaBank</span>
+            <span className="text-2xl font-bold text-white">Crestline</span>
           </div>
           <h2 className="text-4xl font-bold text-white leading-tight">Open Your Account Today</h2>
           <p className="text-blue-200 mt-4 text-lg">Join thousands of Ghanaians banking with confidence.</p>
@@ -125,7 +125,7 @@ export default function Register() {
         <div className="w-full max-w-lg">
           <div className="lg:hidden flex items-center gap-3 mb-6">
             <Building2 size={24} className="text-primary-900" />
-            <span className="text-xl font-bold text-primary-900">GhanaBank</span>
+            <span className="text-xl font-bold text-primary-900">Crestline</span>
           </div>
 
           {/* Steps */}

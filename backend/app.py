@@ -1,4 +1,4 @@
-import os
+﻿import os
 import logging
 from flask import Flask, jsonify, request
 from config import config
@@ -85,7 +85,7 @@ def create_app(config_name=None):
         )
         _scheduler.start()
         atexit.register(lambda: _scheduler.shutdown(wait=False))
-        app.logger.info("APScheduler started — daily checks at 07:00 WAT")
+        app.logger.info("APScheduler started â€” daily checks at 07:00 WAT")
 
     # JWT error handlers
     @jwt.expired_token_loader
@@ -118,7 +118,7 @@ def create_app(config_name=None):
         return jsonify({
             'success': True,
             'status': 'healthy',
-            'bank': app.config.get('BANK_NAME', 'GhanaBank'),
+            'bank': app.config.get('BANK_NAME', 'Crestline Solutions LTD'),
             'version': '1.0.0',
         }), 200
 
@@ -157,7 +157,7 @@ def _seed_initial_data(app):
             city='Accra',
             region='Greater Accra',
             phone='0302000000',
-            email='headoffice@ghanabank.com',
+            email='headoffice@crestlinesolutions.com',
             opening_hours='Mon-Fri: 8AM-5PM, Sat: 9AM-1PM',
             status='active',
         )
@@ -171,7 +171,7 @@ def _seed_initial_data(app):
             city='Kumasi',
             region='Ashanti',
             phone='0322000000',
-            email='kumasi@ghanabank.com',
+            email='kumasi@crestlinesolutions.com',
             opening_hours='Mon-Fri: 8AM-5PM, Sat: 9AM-1PM',
             status='active',
         )
@@ -184,9 +184,9 @@ def _seed_initial_data(app):
             id=str(uuid.uuid4()),
             first_name='System',
             last_name='Administrator',
-            email='admin@ghanabank.com',
+            email='admin@crestlinesolutions.com',
             phone='0200000000',
-            password_hash=bc.generate_password_hash('Admin@GhanaBank2024').decode('utf-8'),
+            password_hash=bc.generate_password_hash('Admin@Crestline2024').decode('utf-8'),
             role='super_admin',
             kyc_status='verified',
             kyc_completion=100,
@@ -199,9 +199,9 @@ def _seed_initial_data(app):
             id=str(uuid.uuid4()),
             first_name='Branch',
             last_name='Manager',
-            email='manager@ghanabank.com',
+            email='manager@crestlinesolutions.com',
             phone='0200000001',
-            password_hash=bc.generate_password_hash('Manager@GhanaBank2024').decode('utf-8'),
+            password_hash=bc.generate_password_hash('Manager@Crestline2024').decode('utf-8'),
             role='manager',
             kyc_status='verified',
             kyc_completion=100,
@@ -214,9 +214,9 @@ def _seed_initial_data(app):
             id=str(uuid.uuid4()),
             first_name='Bank',
             last_name='Teller',
-            email='teller@ghanabank.com',
+            email='teller@crestlinesolutions.com',
             phone='0200000002',
-            password_hash=bc.generate_password_hash('Teller@GhanaBank2024').decode('utf-8'),
+            password_hash=bc.generate_password_hash('Teller@Crestline2024').decode('utf-8'),
             role='teller',
             kyc_status='verified',
             kyc_completion=100,
@@ -226,13 +226,14 @@ def _seed_initial_data(app):
         db.session.add(teller)
         db.session.commit()
 
-        app.logger.info("✅ Default staff accounts created:")
-        app.logger.info("   Admin: admin@ghanabank.com / Admin@GhanaBank2024")
-        app.logger.info("   Manager: manager@ghanabank.com / Manager@GhanaBank2024")
-        app.logger.info("   Teller: teller@ghanabank.com / Teller@GhanaBank2024")
+        app.logger.info("âœ… Default staff accounts created:")
+        app.logger.info("   Admin: admin@crestlinesolutions.com / Admin@Crestline2024")
+        app.logger.info("   Manager: manager@crestlinesolutions.com / Manager@Crestline2024")
+        app.logger.info("   Teller: teller@crestlinesolutions.com / Teller@Crestline2024")
 
 
 if __name__ == '__main__':
     app = create_app()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+

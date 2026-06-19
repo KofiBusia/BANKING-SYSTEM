@@ -46,7 +46,7 @@ export default function Login() {
             <div className="w-10 h-10 bg-gold-400 rounded-xl flex items-center justify-center">
               <Building2 size={22} className="text-primary-900" />
             </div>
-            <span className="text-2xl font-bold text-white">GhanaBank</span>
+            <span className="text-2xl font-bold text-white">Crestline</span>
           </div>
           <h2 className="text-4xl font-bold text-white leading-tight">
             Your Trusted<br />Financial Partner
@@ -76,7 +76,7 @@ export default function Login() {
             <div className="w-9 h-9 bg-primary-900 rounded-xl flex items-center justify-center">
               <Building2 size={20} className="text-white" />
             </div>
-            <span className="text-xl font-bold text-primary-900">GhanaBank</span>
+            <span className="text-xl font-bold text-primary-900">Crestline</span>
           </div>
 
           <div className="mb-8">

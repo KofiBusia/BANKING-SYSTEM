@@ -244,7 +244,7 @@ export default function AdminAccountProducts() {
             <div className="p-5 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Product Name *</label>
-                <input value={form.name} onChange={e => set('name', e.target.value)} className="input-field text-sm" placeholder="e.g. GhanaBank Savings Account" />
+                <input value={form.name} onChange={e => set('name', e.target.value)} className="input-field text-sm" placeholder="e.g. Crestline Savings Account" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

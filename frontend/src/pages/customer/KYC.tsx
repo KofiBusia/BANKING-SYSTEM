@@ -261,7 +261,7 @@ export default function KYC() {
         <div className="card text-center py-8">
           <CheckCircle2 size={48} className="text-emerald-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-900">KYC Fully Verified!</h2>
-          <p className="text-gray-500 mt-2">You have full access to all GhanaBank services.</p>
+          <p className="text-gray-500 mt-2">You have full access to all Crestline services.</p>
         </div>
       )}
     </div>

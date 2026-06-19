@@ -85,7 +85,7 @@ export default function Transfer() {
     <div className="max-w-lg mx-auto space-y-6 page-enter">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Transfer Money</h1>
-        <p className="text-gray-500 text-sm mt-0.5">Send funds to any GhanaBank account instantly</p>
+        <p className="text-gray-500 text-sm mt-0.5">Send funds to any Crestline account instantly</p>
       </div>
 
       <form onSubmit={handleTransfer} className="space-y-5">

@@ -208,7 +208,7 @@ export default function AdminBranches() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-                  <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className="input-field text-sm" placeholder="branch@ghanabank.com" />
+                  <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className="input-field text-sm" placeholder="branch@crestlinesolutions.com" />
                 </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-gray-600 mb-1">Opening Hours</label>
