@@ -70,6 +70,8 @@ export const transactionsAPI = {
   deposit: (data: object) => API.post('/transactions/deposit', data),
   withdraw: (data: object) => API.post('/transactions/withdraw', data),
   transfer: (data: object) => API.post('/transactions/transfer', data),
+  interbankTransfer: (data: object) => API.post('/transactions/interbank-transfer', data),
+  mobileMoneyOut: (data: object) => API.post('/transactions/mobile-money-send', data),
   mobileMoney: (data: object) => API.post('/transactions/mobile-money', data),
 };
 

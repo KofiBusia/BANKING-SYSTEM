@@ -426,6 +426,198 @@ def mobile_money():
         return jsonify({'success': False, 'message': 'Transaction failed. Please try again.'}), 500
 
 
+@transactions_bp.route('/interbank-transfer', methods=['POST'])
+@jwt_required()
+def interbank_transfer():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    data = request.get_json()
+
+    from_account_id = data.get('from_account_id')
+    bank_code = data.get('bank_code', '').strip()
+    bank_name = data.get('bank_name', '').strip()
+    to_account_number = data.get('to_account_number', '').strip()
+    to_account_name = data.get('to_account_name', '').strip()
+    amount = float(data.get('amount', 0))
+    narration = data.get('narration', 'Interbank Transfer')
+    pin = data.get('pin', '')
+
+    if amount <= 0:
+        return jsonify({'success': False, 'message': 'Amount must be greater than 0'}), 400
+    if not bank_code or not to_account_number or not to_account_name:
+        return jsonify({'success': False, 'message': 'Bank, account number and account name are required'}), 400
+
+    if user.pin_set and pin:
+        if not bcrypt.check_password_hash(user.transaction_pin, pin):
+            return jsonify({'success': False, 'message': 'Invalid transaction PIN'}), 400
+
+    ok, msg = check_transaction_limit(user, amount)
+    if not ok:
+        return jsonify({'success': False, 'message': msg}), 403
+
+    from_account = Account.query.filter_by(id=from_account_id, user_id=user_id, status='active').first()
+    if not from_account:
+        return jsonify({'success': False, 'message': 'Source account not found'}), 404
+
+    if float(from_account.available_balance) < amount:
+        return jsonify({'success': False, 'message': 'Insufficient funds'}), 400
+
+    try:
+        ref = generate_transaction_reference()
+        balance_before = float(from_account.balance)
+        from_account.balance = balance_before - amount
+        from_account.available_balance = float(from_account.available_balance) - amount
+        from_account.ledger_balance = float(from_account.ledger_balance) - amount
+        from_account.last_transaction_date = datetime.utcnow()
+
+        txn = Transaction(
+            id=str(uuid.uuid4()),
+            reference=ref,
+            account_id=from_account.id,
+            transaction_type='interbank_out',
+            amount=amount,
+            balance_before=balance_before,
+            balance_after=float(from_account.balance),
+            currency='GHS',
+            description=f'Interbank Transfer to {bank_name} — {to_account_number}',
+            narration=narration,
+            channel='interbank',
+            status='completed',
+            counterparty_account=to_account_number,
+            counterparty_name=to_account_name,
+            counterparty_bank=bank_name,
+            value_date=datetime.utcnow().date(),
+        )
+        db.session.add(txn)
+
+        db.session.add(Notification(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
+            title='Interbank Transfer Sent',
+            message=f'GHS {amount:,.2f} sent to {to_account_name} at {bank_name}. Ref: {ref}',
+            type='success',
+            category='transaction',
+        ))
+        db.session.commit()
+
+        try:
+            send_transaction_alert(user, txn, from_account)
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'message': f'GHS {amount:,.2f} transferred to {to_account_name} at {bank_name}',
+            'reference': ref,
+            'transaction': txn.to_dict(),
+            'new_balance': float(from_account.balance),
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Interbank transfer error: {str(e)}")
+        return jsonify({'success': False, 'message': 'Transfer failed. Please try again.'}), 500
+
+
+@transactions_bp.route('/mobile-money-send', methods=['POST'])
+@jwt_required()
+def mobile_money_send():
+    """Outward mobile money — debit account, send to MoMo wallet."""
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    data = request.get_json()
+
+    from_account_id = data.get('from_account_id')
+    phone = data.get('phone', '').strip()
+    network = data.get('network', '').upper()
+    amount = float(data.get('amount', 0))
+    recipient_name = data.get('recipient_name', '').strip()
+    narration = data.get('narration', 'Mobile Money Transfer')
+    pin = data.get('pin', '')
+
+    if amount <= 0:
+        return jsonify({'success': False, 'message': 'Amount must be greater than 0'}), 400
+    if not phone or not network:
+        return jsonify({'success': False, 'message': 'Phone number and network are required'}), 400
+
+    valid_networks = ['MTN', 'TELECEL', 'AIRTELTIGO']
+    if network not in valid_networks:
+        return jsonify({'success': False, 'message': f'Invalid network. Choose: {", ".join(valid_networks)}'}), 400
+
+    if user.pin_set and pin:
+        if not bcrypt.check_password_hash(user.transaction_pin, pin):
+            return jsonify({'success': False, 'message': 'Invalid transaction PIN'}), 400
+
+    ok, msg = check_transaction_limit(user, amount)
+    if not ok:
+        return jsonify({'success': False, 'message': msg}), 403
+
+    from_account = Account.query.filter_by(id=from_account_id, user_id=user_id, status='active').first()
+    if not from_account:
+        return jsonify({'success': False, 'message': 'Source account not found'}), 404
+
+    if float(from_account.available_balance) < amount:
+        return jsonify({'success': False, 'message': 'Insufficient funds'}), 400
+
+    try:
+        ref = generate_transaction_reference()
+        balance_before = float(from_account.balance)
+        from_account.balance = balance_before - amount
+        from_account.available_balance = float(from_account.available_balance) - amount
+        from_account.ledger_balance = float(from_account.ledger_balance) - amount
+        from_account.last_transaction_date = datetime.utcnow()
+
+        network_labels = {'MTN': 'MTN MoMo', 'TELECEL': 'Telecel Cash', 'AIRTELTIGO': 'AirtelTigo Money'}
+        network_label = network_labels.get(network, network)
+
+        txn = Transaction(
+            id=str(uuid.uuid4()),
+            reference=ref,
+            account_id=from_account.id,
+            transaction_type='mobile_money_out',
+            amount=amount,
+            balance_before=balance_before,
+            balance_after=float(from_account.balance),
+            currency='GHS',
+            description=f'{network_label} — {phone}',
+            narration=narration,
+            channel='mobile_money',
+            status='completed',
+            counterparty_phone=phone,
+            counterparty_name=recipient_name or phone,
+            counterparty_bank=network_label,
+            value_date=datetime.utcnow().date(),
+        )
+        db.session.add(txn)
+
+        db.session.add(Notification(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
+            title='Mobile Money Sent',
+            message=f'GHS {amount:,.2f} sent to {network_label} {phone}. Ref: {ref}',
+            type='success',
+            category='transaction',
+        ))
+        db.session.commit()
+
+        try:
+            send_transaction_alert(user, txn, from_account)
+        except Exception:
+            pass
+
+        return jsonify({
+            'success': True,
+            'message': f'GHS {amount:,.2f} sent to {network_label} {phone}',
+            'reference': ref,
+            'transaction': txn.to_dict(),
+            'new_balance': float(from_account.balance),
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': 'Transaction failed. Please try again.'}), 500
+
+
 @transactions_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_transactions():
