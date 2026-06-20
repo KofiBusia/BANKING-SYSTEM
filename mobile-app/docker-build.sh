@@ -66,9 +66,11 @@ with open(path, 'r') as f:
 content = content.replace('minifyEnabled false',
                           'minifyEnabled true\n            shrinkResources true')
 content = content.replace('proguard-android.txt', 'proguard-android-optimize.txt')
+content = re.sub(r'versionCode \d+', 'versionCode 2', content)
+content = re.sub(r'versionName "[^"]*"', 'versionName "1.1.0"', content)
 with open(path, 'w') as f:
     f.write(content)
-print("    app/build.gradle patched (ProGuard + shrink enabled)")
+print("    app/build.gradle patched (ProGuard + shrink enabled, versionCode=2)")
 
 # Patch variables.gradle — bump compile + target SDK to 35
 vpath = '/workspace/android/variables.gradle'
@@ -85,16 +87,22 @@ PYEOF
 
 cp /workspace/android-config/proguard-rules.pro /workspace/android/app/proguard-rules.pro
 
-# Generate signing keystore
-keytool -genkey -v \
-  -keystore /tmp/crestline-keystore.jks \
-  -alias crestline-key \
-  -keyalg RSA -keysize 2048 -validity 10000 \
-  -storepass "CrestlineBank2024!" \
-  -keypass "CrestlineBank2024!" \
-  -dname "CN=Crestline Solutions LTD, O=Crestline Solutions LTD, C=GH" \
-  > /dev/null 2>&1
-echo "    Signing keystore generated"
+# Use existing keystore from Desktop if present, otherwise generate a new one
+if [ -f /output/crestline-keystore.jks ]; then
+    cp /output/crestline-keystore.jks /tmp/crestline-keystore.jks
+    echo "    Using existing keystore from Desktop"
+else
+    keytool -genkey -v \
+      -keystore /tmp/crestline-keystore.jks \
+      -alias crestline-key \
+      -keyalg RSA -keysize 2048 -validity 10000 \
+      -storepass "CrestlineBank2024!" \
+      -keypass "CrestlineBank2024!" \
+      -dname "CN=Crestline Solutions LTD, O=Crestline Solutions LTD, C=GH" \
+      > /dev/null 2>&1
+    cp /tmp/crestline-keystore.jks /output/crestline-keystore.jks
+    echo "    New keystore generated and saved to Desktop"
+fi
 
 # Build signed AAB
 echo ""

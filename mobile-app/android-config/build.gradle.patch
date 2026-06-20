@@ -2,12 +2,12 @@
 
 # Under android { } block, ensure:
 android {
-    compileSdkVersion 34
+    compileSdkVersion 35
     defaultConfig {
-        minSdkVersion 24
-        targetSdkVersion 34
-        versionCode 1
-        versionName "1.0.0"
+        minSdkVersion 22
+        targetSdkVersion 35
+        versionCode 2
+        versionName "1.1.0"
     }
     buildTypes {
         release {
