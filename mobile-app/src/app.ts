@@ -145,7 +145,18 @@ export async function navigate(name: ScreenName, params?: Record<string, unknown
   el.innerHTML = '';
   el.classList.remove('screen-enter');
 
-  await screenRenderers[name](el, params ?? {});
+  try {
+    await screenRenderers[name](el, params ?? {});
+  } catch (e) {
+    el.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:40px 24px;text-align:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5" width="48" height="48" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div style="font-size:16px;font-weight:700;color:#374151;margin-bottom:8px;">Something went wrong</div>
+        <div style="font-size:14px;color:#9CA3AF;margin-bottom:24px;">Could not load this screen. Check your connection and try again.</div>
+        <button onclick="location.reload()" style="padding:12px 28px;background:#1B3A6B;color:white;border:none;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;">Reload App</button>
+      </div>`;
+    throw e;
+  }
 
   requestAnimationFrame(() => el.classList.add('screen-enter'));
   currentScreen = name;
@@ -174,7 +185,7 @@ async function renderLogin(el: HTMLElement) {
           </svg>
         </div>
         <div>
-          <div class="auth-hero-title">Crestline Bank</div>
+          <div class="auth-hero-title">Crestline Capital</div>
           <div class="auth-hero-sub">Your trusted financial partner</div>
         </div>
       </div>
@@ -850,7 +861,7 @@ function accountCardHtml(acc: Account): string {
         </div>
         <div style="position:relative;z-index:1">
           <div class="account-card-balance-label">Available Balance</div>
-          <div class="account-card-balance">${formatCurrency(acc.available_balance, acc.currency)}</div>
+          <div class="account-card-balance">${formatCurrency(acc.available_balance, 'GHS')}</div>
         </div>
         <div class="flex items-center justify-between" style="position:relative;z-index:1">
           <div class="account-card-number">${maskAccountNumber(acc.account_number)}</div>

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.mcag',
-  appName: 'Crestline Bank',
+  appName: 'Crestline Capital',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
