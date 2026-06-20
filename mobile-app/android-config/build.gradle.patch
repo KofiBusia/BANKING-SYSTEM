@@ -1,0 +1,27 @@
+# Apply these settings to android/app/build.gradle after running `npx cap add android`
+
+# Under android { } block, ensure:
+android {
+    compileSdkVersion 34
+    defaultConfig {
+        minSdkVersion 24
+        targetSdkVersion 34
+        versionCode 1
+        versionName "1.0.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+}
+
+# These settings (minifyEnabled + shrinkResources + R8/ProGuard) are key to keeping the APK under 10MB.
+# The Android App Bundle (AAB) uploaded to Play Store will be even smaller per device.

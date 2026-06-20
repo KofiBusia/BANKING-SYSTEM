@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+android/
+ios/
+*.DS_Store
+.gradle/
+local.properties
+*.iml
+.idea/
+build/
+*.jks
+*.keystore
+Pods/
+*.xcworkspace/xcuserdata/

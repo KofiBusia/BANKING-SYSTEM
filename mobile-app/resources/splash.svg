@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F2347"/>
+      <stop offset="50%" stop-color="#1B3A6B"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+  <rect width="2732" height="2732" fill="url(#bg)"/>
+
+  <!-- Subtle circles -->
+  <circle cx="2400" cy="400" r="700" fill="white" opacity="0.04"/>
+  <circle cx="300" cy="2400" r="600" fill="white" opacity="0.03"/>
+
+  <!-- Logo icon centered -->
+  <g transform="translate(1016, 980)">
+    <!-- Columns -->
+    <rect x="60" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="172" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="284" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="396" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="508" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <!-- Base -->
+    <rect x="20" y="464" width="586" height="40" rx="8" fill="white"/>
+    <!-- Roof -->
+    <polygon points="312,60 20,200 604,200" fill="#D4AF37"/>
+    <!-- Bar -->
+    <rect x="20" y="196" width="586" height="36" rx="4" fill="white"/>
+  </g>
+
+  <!-- Bank name -->
+  <text x="1366" y="1700" text-anchor="middle" font-size="120" fill="white" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" letter-spacing="4">Crestline Bank</text>
+
+  <!-- Tagline -->
+  <text x="1366" y="1800" text-anchor="middle" font-size="56" fill="#D4AF37" font-family="Arial, sans-serif" letter-spacing="6" font-weight="500">YOUR TRUSTED PARTNER</text>
+
+  <!-- Gold divider -->
+  <rect x="966" y="1840" width="800" height="4" rx="2" fill="#D4AF37" opacity="0.6"/>
+</svg>

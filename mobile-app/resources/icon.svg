@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="230" fill="#1B3A6B"/>
+
+  <!-- Decorative circles -->
+  <circle cx="820" cy="200" r="320" fill="#2563EB" opacity="0.25"/>
+  <circle cx="200" cy="820" r="260" fill="#0F2347" opacity="0.4"/>
+
+  <!-- Bank building icon -->
+  <g transform="translate(200, 180)">
+    <!-- Columns -->
+    <rect x="60" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="172" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="284" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="396" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+    <rect x="508" y="220" width="60" height="260" rx="8" fill="white" opacity="0.95"/>
+
+    <!-- Base platform -->
+    <rect x="20" y="464" width="586" height="40" rx="8" fill="white"/>
+
+    <!-- Pediment (triangle roof) -->
+    <polygon points="312,60 20,200 604,200" fill="#D4AF37"/>
+
+    <!-- Entablature bar -->
+    <rect x="20" y="196" width="586" height="36" rx="4" fill="white"/>
+
+    <!-- Star/accent in pediment -->
+    <circle cx="312" cy="148" r="28" fill="#1B3A6B"/>
+    <text x="312" y="158" text-anchor="middle" font-size="32" fill="#D4AF37" font-family="serif">★</text>
+  </g>
+
+  <!-- Gold accent bar at bottom -->
+  <rect x="140" y="780" width="744" height="16" rx="8" fill="#D4AF37"/>
+
+  <!-- CSL text -->
+  <text x="512" y="730" text-anchor="middle" font-size="80" fill="white" font-family="Georgia, serif" font-weight="bold" letter-spacing="8" opacity="0.9">CSL</text>
+</svg>
