@@ -256,9 +256,12 @@ async function renderLogin(el: HTMLElement) {
     btn.classList.add('btn-loading');
     try {
       const res = await api.login(email, password);
+      if (!res.access_token || !res.user) {
+        throw { message: 'Login failed. Please check your connection and try again.' };
+      }
       await api.saveTokens(res.access_token, res.refresh_token);
       await store.setUser(res.user);
-      await store.setAccounts(res.accounts);
+      await store.setAccounts(res.accounts ?? []);
       await navigate('dashboard');
     } catch (e: unknown) {
       const err = e as { message?: string };
@@ -604,7 +607,7 @@ async function renderKycRedirect(el: HTMLElement) {
 async function renderDashboard(el: HTMLElement) {
   setNavVisible(true, 'dashboard');
   const user = store.user;
-  const accounts = store.accounts;
+  const accounts = store.accounts ?? [];
 
   el.innerHTML = `
     <div style="display:flex;flex-direction:column;min-height:100%">

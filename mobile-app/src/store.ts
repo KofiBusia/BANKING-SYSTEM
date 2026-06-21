@@ -8,8 +8,8 @@ class Store {
   async load() {
     const { value: u } = await Preferences.get({ key: 'gb_user' });
     const { value: a } = await Preferences.get({ key: 'gb_accounts' });
-    if (u) this._user = JSON.parse(u);
-    if (a) this._accounts = JSON.parse(a);
+    if (u) this._user = JSON.parse(u) ?? null;
+    if (a) this._accounts = JSON.parse(a) ?? [];
   }
 
   get user(): User | null { return this._user; }
@@ -24,9 +24,9 @@ class Store {
     await Preferences.set({ key: 'gb_user', value: JSON.stringify(user) });
   }
 
-  async setAccounts(accounts: Account[]) {
-    this._accounts = accounts;
-    await Preferences.set({ key: 'gb_accounts', value: JSON.stringify(accounts) });
+  async setAccounts(accounts: Account[] | null | undefined) {
+    this._accounts = accounts ?? [];
+    await Preferences.set({ key: 'gb_accounts', value: JSON.stringify(this._accounts) });
   }
 
   async clear() {

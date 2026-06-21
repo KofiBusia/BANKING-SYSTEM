@@ -99,7 +99,12 @@ class ApiClient {
       throw { success: false, message: 'Session expired. Please log in again.', status: 401 };
     }
 
-    const data = await res.json().catch(() => ({ success: false, message: 'Network error' }));
+    let data: any;
+    try {
+      data = await res.json();
+    } catch {
+      throw { success: false, message: 'Network error. Check your connection and try again.', status: res.status };
+    }
 
     if (!res.ok) {
       throw { success: false, message: data.message || 'An error occurred', status: res.status };

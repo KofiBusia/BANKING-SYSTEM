@@ -32,7 +32,7 @@ async function bootstrap() {
     try {
       const me = await api.getMe();
       await store.setUser(me.user);
-      await store.setAccounts(me.accounts);
+      await store.setAccounts(me.accounts ?? []);
       await navigate('dashboard');
     } catch {
       // Token invalid — clear and go to login
