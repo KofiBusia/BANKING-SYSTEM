@@ -254,18 +254,36 @@ async function renderLogin(el: HTMLElement) {
 
     btn.disabled = true;
     btn.classList.add('btn-loading');
-    try {
-      const res = await api.login(email, password);
-      if (!res.access_token || !res.user) {
-        throw { message: 'Login failed. Please check your connection and try again.' };
+
+    const attemptLogin = async (isRetry = false): Promise<void> => {
+      try {
+        const res = await api.login(email, password);
+        if (!res.access_token || !res.user) {
+          throw { message: 'Login failed. Please check your connection and try again.' };
+        }
+        await api.saveTokens(res.access_token, res.refresh_token);
+        await store.setUser(res.user);
+        await store.setAccounts(res.accounts ?? []);
+        await navigate('dashboard');
+      } catch (e: unknown) {
+        const err = e as { message?: string; status?: number };
+        if (err.message === '__cold_start__' && !isRetry) {
+          // Backend waking up — show message and retry once after 5s
+          toast('Server is starting up, please wait…', 'info');
+          await new Promise(r => setTimeout(r, 5000));
+          return attemptLogin(true);
+        }
+        toast(
+          err.message === '__cold_start__'
+            ? 'Server took too long to respond. Please try again.'
+            : err.message || 'Login failed. Please try again.',
+          'error',
+        );
       }
-      await api.saveTokens(res.access_token, res.refresh_token);
-      await store.setUser(res.user);
-      await store.setAccounts(res.accounts ?? []);
-      await navigate('dashboard');
-    } catch (e: unknown) {
-      const err = e as { message?: string };
-      toast(err.message || 'Login failed. Please try again.', 'error');
+    };
+
+    try {
+      await attemptLogin();
     } finally {
       btn.disabled = false;
       btn.classList.remove('btn-loading');

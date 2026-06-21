@@ -103,7 +103,14 @@ class ApiClient {
     try {
       data = await res.json();
     } catch {
-      throw { success: false, message: 'Network error. Check your connection and try again.', status: res.status };
+      // Non-JSON response — backend may be cold-starting on Render
+      throw {
+        success: false,
+        message: res.ok
+          ? '__cold_start__'
+          : 'Server error. Please try again.',
+        status: res.status,
+      };
     }
 
     if (!res.ok) {
