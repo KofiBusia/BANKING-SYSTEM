@@ -11,10 +11,11 @@ from .staff import Staff
 from .treasury_bill import TreasuryBill
 from .tbill_rate import TBillRate
 from .account_product import AccountProduct
+from .migration import MigrationRecord
 
 __all__ = [
     'User', 'Account', 'Transaction', 'KYCInfo', 'KYCDocument',
     'Loan', 'LoanRepayment', 'Notification', 'AuditLog',
     'PasswordResetToken', 'VerificationCode', 'Branch', 'Staff',
-    'TreasuryBill', 'TBillRate', 'AccountProduct'
+    'TreasuryBill', 'TBillRate', 'AccountProduct', 'MigrationRecord'
 ]

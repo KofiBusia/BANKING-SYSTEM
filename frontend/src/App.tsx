@@ -35,6 +35,7 @@ import AdminBranches from './pages/admin/AdminBranches';
 import AdminRMLeague from './pages/admin/AdminRMLeague';
 import AdminTBillRates from './pages/admin/AdminTBillRates';
 import AdminAccountProducts from './pages/admin/AdminAccountProducts';
+import AdminMigration from './pages/admin/AdminMigration';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -104,6 +105,7 @@ function AppRoutes() {
         <Route path="branch-league" element={<AdminBranchLeague />} />
         <Route path="branches" element={<AdminBranches />} />
         <Route path="rm-league" element={<AdminRMLeague />} />
+        <Route path="migration" element={<AdminMigration />} />
       </Route>
 
       {/* Root redirect */}

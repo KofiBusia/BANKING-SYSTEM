@@ -21,9 +21,10 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
+      const userData = await login(data.email, data.password);
       toast.success('Welcome back!');
-      navigate('/dashboard');
+      const adminRoles = ['admin', 'super_admin', 'manager', 'teller'];
+      navigate(adminRoles.includes(userData?.role) ? '/admin' : '/dashboard');
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Login failed. Please try again.';
       toast.error(msg);

@@ -192,7 +192,7 @@ export interface AuthContextType {
   accounts: Account[];
   token: string | null;
   isLoading: boolean;
-  login: (identifier: string, password: string) => Promise<void>;
+  login: (identifier: string, password: string) => Promise<User>;
   logout: () => void;
   register: (data: RegisterData) => Promise<void>;
   refreshUser: () => Promise<void>;

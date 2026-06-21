@@ -201,7 +201,7 @@ export default function Dashboard() {
               {activeLoans[0]?.next_payment_date && (
                 <p className="text-xs text-gray-400 mt-2">
                   Next payment: {new Date(activeLoans[0].next_payment_date).toLocaleDateString('en-GH', { day: 'numeric', month: 'short' })}
-                  {' — '}{formatCurrency(activeLoans[0].monthly_installment || 0)}
+                  {' — '}{formatCurrency(activeLoans[0].monthly_payment || 0)}
                 </p>
               )}
               <div className="flex items-center gap-1 mt-2 text-xs text-purple-600 font-medium">

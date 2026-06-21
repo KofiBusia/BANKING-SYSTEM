@@ -46,6 +46,7 @@ def create_app(config_name=None):
     from routes.admin import admin_bp
     from routes.notifications import notifications_bp
     from routes.treasury_bills import tbills_bp
+    from routes.migration import migration_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(accounts_bp, url_prefix='/api/accounts')
@@ -55,6 +56,7 @@ def create_app(config_name=None):
     app.register_blueprint(admin_bp, url_prefix='/api/admin')
     app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
     app.register_blueprint(tbills_bp, url_prefix='/api/treasury-bills')
+    app.register_blueprint(migration_bp, url_prefix='/api/migration')
 
     # Create tables
     with app.app_context():

@@ -147,3 +147,17 @@ export const publicAPI = {
   getBranches: () => API.get('/auth/branches'),
   getAccountProducts: () => API.get('/auth/account-products'),
 };
+
+// Migration
+export const migrationAPI = {
+  getTemplates: () => API.get('/migration/templates'),
+  downloadTemplate: (type: string) => API.get(`/migration/template/${type}/download`, { responseType: 'blob' }),
+  importData: (type: string, file: File) => {
+    const fd = new FormData();
+    fd.append('type', type);
+    fd.append('file', file);
+    return API.post('/migration/import', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  getHistory: (params?: object) => API.get('/migration/history', { params }),
+  getHistoryDetail: (id: string) => API.get(`/migration/history/${id}`),
+};

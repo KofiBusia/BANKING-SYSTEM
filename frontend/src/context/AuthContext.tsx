@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { authAPI } from '../services/api';
 import type { User, Account, AuthContextType } from '../types';
 import toast from 'react-hot-toast';
@@ -10,6 +10,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [token, setToken] = useState<string | null>(localStorage.getItem('gb_token'));
   const [isLoading, setIsLoading] = useState(true);
+  // Prevents redundant /auth/me call when login() or register() already set user state
+  const skipNextRefreshRef = useRef(false);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -27,7 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (token) {
-      refreshUser().finally(() => setIsLoading(false));
+      if (skipNextRefreshRef.current) {
+        skipNextRefreshRef.current = false;
+        setIsLoading(false);
+      } else {
+        refreshUser().finally(() => setIsLoading(false));
+      }
     } else {
       setIsLoading(false);
     }
@@ -38,9 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { access_token, refresh_token, user: userData, accounts: accs } = res.data;
     localStorage.setItem('gb_token', access_token);
     localStorage.setItem('gb_refresh_token', refresh_token);
+    skipNextRefreshRef.current = true;
     setToken(access_token);
     setUser(userData);
     setAccounts(accs || []);
+    return userData;
   };
 
   const register = async (data: object) => {
@@ -48,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { access_token, refresh_token, user: userData, account } = res.data;
     localStorage.setItem('gb_token', access_token);
     localStorage.setItem('gb_refresh_token', refresh_token);
+    skipNextRefreshRef.current = true;
     setToken(access_token);
     setUser(userData);
     setAccounts(account ? [account] : []);

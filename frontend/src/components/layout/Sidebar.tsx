@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, CreditCard, ArrowLeftRight, Banknote, FileText,
-  User, LogOut, Shield, Users, BarChart3, Building2, X, ChevronRight, TrendingUp, Trophy, Award
+  User, LogOut, Shield, Users, BarChart3, Building2, X, ChevronRight, TrendingUp, Trophy, Award, Database
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { clsx } from '../../utils/helpers';
@@ -35,6 +35,7 @@ const adminNav = [
   { label: 'RM League', icon: Award, href: '/admin/rm-league' },
   { label: 'Staff Management', icon: Users, href: '/admin/staff' },
   { label: 'Reports', icon: BarChart3, href: '/admin/reports' },
+  { label: 'Data Migration', icon: Database, href: '/admin/migration' },
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
