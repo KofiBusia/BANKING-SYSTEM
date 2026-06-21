@@ -255,35 +255,55 @@ async function renderLogin(el: HTMLElement) {
     btn.disabled = true;
     btn.classList.add('btn-loading');
 
-    const attemptLogin = async (isRetry = false): Promise<void> => {
+    try {
+      // First attempt
+      let coldStart = false;
       try {
         const res = await api.login(email, password);
-        if (!res.access_token || !res.user) {
-          throw { message: 'Login failed. Please check your connection and try again.' };
-        }
+        if (!res.access_token || !res.user) throw { message: 'Login failed. Please check your credentials.' };
         await api.saveTokens(res.access_token, res.refresh_token);
         await store.setUser(res.user);
         await store.setAccounts(res.accounts ?? []);
         await navigate('dashboard');
+        return;
       } catch (e: unknown) {
-        const err = e as { message?: string; status?: number };
-        if (err.message === '__cold_start__' && !isRetry) {
-          // Backend waking up — show message and retry once after 5s
-          toast('Server is starting up, please wait…', 'info');
-          await new Promise(r => setTimeout(r, 5000));
-          return attemptLogin(true);
-        }
-        toast(
-          err.message === '__cold_start__'
-            ? 'Server took too long to respond. Please try again.'
-            : err.message || 'Login failed. Please try again.',
-          'error',
-        );
+        const err = e as { message?: string };
+        if (err.message !== '__cold_start__') throw e;
+        coldStart = true;
       }
-    };
 
-    try {
-      await attemptLogin();
+      if (coldStart) {
+        // Poll the lightweight /branches endpoint every 5s until the backend wakes up (max 60s)
+        toast('Server is starting up, please wait…', 'info');
+        let awake = false;
+        for (let i = 0; i < 12; i++) {
+          await new Promise(r => setTimeout(r, 5000));
+          try {
+            await api.getBranches();
+            awake = true;
+            break;
+          } catch (e: unknown) {
+            const err = e as { message?: string };
+            if (err.message !== '__cold_start__') break;
+          }
+        }
+
+        if (!awake) {
+          toast('Server took too long to start. Please try again in a minute.', 'error');
+          return;
+        }
+
+        // Backend is awake — retry login
+        const res = await api.login(email, password);
+        if (!res.access_token || !res.user) throw { message: 'Login failed. Please check your credentials.' };
+        await api.saveTokens(res.access_token, res.refresh_token);
+        await store.setUser(res.user);
+        await store.setAccounts(res.accounts ?? []);
+        await navigate('dashboard');
+      }
+    } catch (e: unknown) {
+      const err = e as { message?: string };
+      toast(err.message || 'Login failed. Please try again.', 'error');
     } finally {
       btn.disabled = false;
       btn.classList.remove('btn-loading');

@@ -68,8 +68,8 @@ with open(path, 'r') as f:
 content = content.replace('minifyEnabled false',
                           'minifyEnabled true\n            shrinkResources true')
 content = content.replace('proguard-android.txt', 'proguard-android-optimize.txt')
-content = re.sub(r'versionCode\s*=?\s*\d+', 'versionCode 6', content)
-content = re.sub(r'versionName\s*=?\s*"[^"]*"', 'versionName "1.2.2"', content)
+content = re.sub(r'versionCode\s*=?\s*\d+', 'versionCode 7', content)
+content = re.sub(r'versionName\s*=?\s*"[^"]*"', 'versionName "1.2.3"', content)
 with open(path, 'w') as f:
     f.write(content)
 import re as _re
