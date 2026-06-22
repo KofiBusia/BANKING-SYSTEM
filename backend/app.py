@@ -188,7 +188,7 @@ def _seed_initial_data(app):
             last_name='Administrator',
             email='admin@crestlinesolutions.com',
             phone='0200000000',
-            password_hash=bc.generate_password_hash('Admin@Crestline2024').decode('utf-8'),
+            password_hash=bc.generate_password_hash('GhanaBank@2026!').decode('utf-8'),
             role='super_admin',
             kyc_status='verified',
             kyc_completion=100,
