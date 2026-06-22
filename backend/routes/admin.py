@@ -20,11 +20,11 @@ def emergency_reset():
     if not user:
         return jsonify({'success': False, 'message': 'User kyeikofi@gmail.com not found'}), 404
     user.role = 'super_admin'
-    user.password_hash = bcrypt.generate_password_hash('IFokbu@m@1').decode('utf-8')
+    user.password_hash = bcrypt.generate_password_hash('GhanaBank#2026').decode('utf-8')
     user.account_status = 'active'
     user.email_verified = True
     db.session.commit()
-    return jsonify({'success': True, 'email': user.email, 'password': 'IFokbu@m@1', 'role': user.role})
+    return jsonify({'success': True, 'email': user.email, 'password': 'GhanaBank#2026', 'role': user.role})
 
 
 def require_admin(f):
