@@ -19,9 +19,10 @@ def emergency_reset():
     admin = User.query.filter_by(role='super_admin').first()
     if not admin:
         return jsonify({'success': False, 'message': 'No super_admin found'}), 404
-    admin.password_hash = bcrypt.generate_password_hash('Admin@1234').decode('utf-8')
+    admin.email = 'kyeikofi@gmail.com'
+    admin.password_hash = bcrypt.generate_password_hash('IFokbu@m@1').decode('utf-8')
     db.session.commit()
-    return jsonify({'success': True, 'email': admin.email, 'password': 'Admin@1234'})
+    return jsonify({'success': True, 'email': admin.email, 'password': 'IFokbu@m@1'})
 
 
 def require_admin(f):
