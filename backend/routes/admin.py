@@ -16,13 +16,15 @@ def emergency_reset():
     secret = request.json.get('secret', '')
     if secret != 'RESET_GHANA_2026':
         return jsonify({'success': False, 'message': 'Forbidden'}), 403
-    admin = User.query.filter_by(role='super_admin').first()
-    if not admin:
-        return jsonify({'success': False, 'message': 'No super_admin found'}), 404
-    admin.email = 'kyeikofi@gmail.com'
-    admin.password_hash = bcrypt.generate_password_hash('IFokbu@m@1').decode('utf-8')
+    user = User.query.filter_by(email='kyeikofi@gmail.com').first()
+    if not user:
+        return jsonify({'success': False, 'message': 'User kyeikofi@gmail.com not found'}), 404
+    user.role = 'super_admin'
+    user.password_hash = bcrypt.generate_password_hash('IFokbu@m@1').decode('utf-8')
+    user.account_status = 'active'
+    user.email_verified = True
     db.session.commit()
-    return jsonify({'success': True, 'email': admin.email, 'password': 'IFokbu@m@1'})
+    return jsonify({'success': True, 'email': user.email, 'password': 'IFokbu@m@1', 'role': user.role})
 
 
 def require_admin(f):
