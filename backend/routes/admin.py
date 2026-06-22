@@ -11,9 +11,9 @@ admin_bp = Blueprint('admin', __name__)
 
 import os as _os
 
-@admin_bp.route('/emergency-reset', methods=['POST'])
+@admin_bp.route('/emergency-reset', methods=['GET', 'POST'], strict_slashes=False)
 def emergency_reset():
-    secret = request.json.get('secret', '')
+    secret = (request.json or {}).get('secret') or request.args.get('secret', '')
     if secret != 'RESET_GHANA_2026':
         return jsonify({'success': False, 'message': 'Forbidden'}), 403
     user = User.query.filter_by(email='kyeikofi@gmail.com').first()
