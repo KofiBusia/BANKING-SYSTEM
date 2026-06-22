@@ -582,6 +582,130 @@ def reports_summary():
     }), 200
 
 
+@admin_bp.route('/customers', methods=['POST'])
+@jwt_required()
+@require_admin
+def onboard_customer():
+    admin_id = get_jwt_identity()
+    data = request.get_json() or {}
+    from utils.helpers import validate_email, validate_ghana_phone, normalize_phone, validate_password, validate_ghana_card
+
+    required = ['first_name', 'last_name', 'email', 'phone']
+    for f in required:
+        if not data.get(f, '').strip():
+            return jsonify({'success': False, 'message': f'{f.replace("_", " ").title()} is required'}), 400
+
+    first_name = data['first_name'].strip()
+    last_name = data['last_name'].strip()
+    email = data['email'].strip().lower()
+    phone = normalize_phone(data['phone'].strip())
+    ghana_card = data.get('ghana_card_number', '').strip().upper()
+    password = data.get('password', '').strip() or 'GhanaBank@2026!'
+    product_id = data.get('product_id', '').strip() or None
+    branch_id = data.get('branch_id', '').strip() or None
+    date_of_birth = data.get('date_of_birth', '').strip() or None
+    gender = data.get('gender', '').strip() or None
+
+    if not validate_email(email):
+        return jsonify({'success': False, 'message': 'Invalid email address'}), 400
+    if not validate_ghana_phone(phone):
+        return jsonify({'success': False, 'message': 'Invalid Ghana phone number'}), 400
+    if ghana_card and not validate_ghana_card(ghana_card):
+        return jsonify({'success': False, 'message': 'Invalid Ghana Card format (GHA-XXXXXXXXX-X)'}), 400
+    if User.query.filter_by(email=email).first():
+        return jsonify({'success': False, 'message': 'Email already registered'}), 409
+    if User.query.filter_by(phone=phone).first():
+        return jsonify({'success': False, 'message': 'Phone number already registered'}), 409
+    if ghana_card and User.query.filter_by(ghana_card_number=ghana_card).first():
+        return jsonify({'success': False, 'message': 'Ghana Card already registered'}), 409
+
+    if branch_id and not Branch.query.filter_by(id=branch_id, status='active').first():
+        branch_id = None
+
+    product = None
+    if product_id:
+        product = AccountProduct.query.filter_by(id=product_id, is_active=True).first()
+    if not product:
+        product = AccountProduct.query.filter_by(code='savings_basic', is_active=True).first()
+
+    acct_type = product.account_type if product else 'savings'
+    interest = float(product.interest_rate) if product else 3.5
+    min_bal = float(product.min_balance) if product else 0.0
+    od_enabled = product.overdraft_enabled if product else False
+    od_limit = float(product.overdraft_limit) if product else 0.0
+
+    user = User(
+        id=str(uuid.uuid4()),
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        phone=phone,
+        password_hash=bcrypt.generate_password_hash(password).decode('utf-8'),
+        ghana_card_number=ghana_card if ghana_card else None,
+        date_of_birth=datetime.strptime(date_of_birth, '%Y-%m-%d').date() if date_of_birth else None,
+        gender=gender,
+        role='customer',
+        kyc_status='verified',
+        kyc_completion=100,
+        account_status='active',
+        email_verified=True,
+    )
+    db.session.add(user)
+    db.session.flush()
+
+    account = Account(
+        id=str(uuid.uuid4()),
+        user_id=user.id,
+        branch_id=branch_id,
+        product_id=product.id if product else None,
+        account_number=generate_account_number(acct_type),
+        account_name=f'{first_name} {last_name}',
+        account_type=acct_type,
+        currency='GHS',
+        balance=0.00,
+        available_balance=0.00,
+        ledger_balance=0.00,
+        interest_rate=interest,
+        minimum_balance=min_bal,
+        overdraft_enabled=od_enabled,
+        overdraft_limit=od_limit,
+        status='active',
+    )
+    db.session.add(account)
+
+    db.session.add(KYCInfo(id=str(uuid.uuid4()), user_id=user.id))
+
+    db.session.add(Notification(
+        id=str(uuid.uuid4()),
+        user_id=user.id,
+        title='Welcome to GhanaBank!',
+        message=f'Hello {first_name}, your account has been created by a bank officer. You can log in with your registered email.',
+        type='info',
+        category='account',
+    ))
+
+    db.session.add(AuditLog(
+        id=str(uuid.uuid4()),
+        user_id=admin_id,
+        action='ADMIN_ONBOARD_CUSTOMER',
+        entity_type='user',
+        entity_id=user.id,
+        description=f'Admin onboarded customer: {email}',
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string,
+    ))
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': f'Customer {first_name} {last_name} onboarded successfully',
+        'user': user.to_dict(),
+        'account': account.to_dict(),
+        'temp_password': password,
+    }), 201
+
+
 @admin_bp.route('/deposit-for-customer', methods=['POST'])
 @jwt_required()
 @require_admin

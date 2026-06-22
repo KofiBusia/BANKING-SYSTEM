@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Shield, UserCheck } from 'lucide-react';
+import { Search, Shield, UserCheck, UserPlus } from 'lucide-react';
 import { adminAPI } from '../../services/api';
 import { formatCurrency, formatDate, getKYCStatusColor } from '../../utils/helpers';
 import toast from 'react-hot-toast';
@@ -20,9 +20,23 @@ export default function AdminCustomers() {
   const [rmCustomer, setRMCustomer] = useState<any>(null);
   const [selectedRM, setSelectedRM] = useState<string>('');
   const [assigningRM, setAssigningRM] = useState(false);
+  const [showOnboard, setShowOnboard] = useState(false);
+  const [onboarding, setOnboarding] = useState(false);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [onboardForm, setOnboardForm] = useState({
+    first_name: '', last_name: '', email: '', phone: '',
+    ghana_card_number: '', date_of_birth: '', gender: '',
+    password: '', product_id: '', branch_id: '',
+  });
+  const [onboardResult, setOnboardResult] = useState<any>(null);
 
   useEffect(() => { fetchCustomers(); }, [page, kycFilter]);
   useEffect(() => { fetchStaff(); }, []);
+  useEffect(() => {
+    adminAPI.getBranches().then(r => setBranches(r.data.branches || [])).catch(() => {});
+    adminAPI.getAccountProducts().then(r => setProducts(r.data.products || [])).catch(() => {});
+  }, []);
 
   const fetchStaff = async () => {
     try {
@@ -74,6 +88,25 @@ export default function AdminCustomers() {
     } catch (err: any) { toast.error(err.response?.data?.message || 'Action failed'); } finally { setIsProcessing(false); }
   };
 
+  const handleOnboard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOnboarding(true);
+    try {
+      const r = await adminAPI.createCustomer(onboardForm);
+      setOnboardResult(r.data);
+      toast.success('Customer onboarded successfully!');
+      fetchCustomers();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Onboarding failed');
+    } finally { setOnboarding(false); }
+  };
+
+  const resetOnboard = () => {
+    setShowOnboard(false);
+    setOnboardResult(null);
+    setOnboardForm({ first_name: '', last_name: '', email: '', phone: '', ghana_card_number: '', date_of_birth: '', gender: '', password: '', product_id: '', branch_id: '' });
+  };
+
   const handleDepositForCustomer = async (accountNumber: string) => {
     const amount = prompt('Enter deposit amount (GHS):');
     if (!amount || isNaN(parseFloat(amount))) return;
@@ -85,7 +118,10 @@ export default function AdminCustomers() {
 
   return (
     <div className="space-y-6 page-enter">
-      <div><h1 className="text-2xl font-bold text-gray-900">Customers</h1><p className="text-gray-500 text-sm">Manage all customer accounts</p></div>
+      <div className="flex items-center justify-between">
+        <div><h1 className="text-2xl font-bold text-gray-900">Customers</h1><p className="text-gray-500 text-sm">Manage all customer accounts</p></div>
+        <button onClick={() => setShowOnboard(true)} className="btn-primary flex items-center gap-2 py-2.5 px-4 text-sm"><UserPlus size={16} /> Onboard Customer</button>
+      </div>
 
       <div className="card flex flex-col sm:flex-row gap-3">
         <form onSubmit={handleSearch} className="flex gap-2 flex-1">
@@ -167,6 +203,102 @@ export default function AdminCustomers() {
           </div>
         )}
       </div>
+
+      {/* Onboard Customer Modal */}
+      {showOnboard && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white rounded-t-2xl">
+              <div>
+                <h3 className="font-bold text-gray-900">Onboard New Customer</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Create a verified customer account</p>
+              </div>
+              <button onClick={resetOnboard} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+
+            {onboardResult ? (
+              <div className="p-5 space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-2 text-sm">
+                  <p className="font-bold text-green-800 text-base">Customer Onboarded!</p>
+                  <div className="flex justify-between"><span className="text-gray-500">Name</span><span className="font-medium">{onboardResult.user?.first_name} {onboardResult.user?.last_name}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Email</span><span className="font-medium">{onboardResult.user?.email}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Account No.</span><span className="font-mono font-bold">{onboardResult.account?.account_number}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Account Type</span><span className="font-medium capitalize">{onboardResult.account?.account_type}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Temp Password</span><span className="font-mono font-bold text-orange-600">{onboardResult.temp_password}</span></div>
+                </div>
+                <p className="text-xs text-gray-400">Share the temp password with the customer. They can change it after first login.</p>
+                <button onClick={resetOnboard} className="btn-primary w-full">Done</button>
+              </div>
+            ) : (
+              <form onSubmit={handleOnboard} className="p-5 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">First Name *</label>
+                    <input required value={onboardForm.first_name} onChange={e => setOnboardForm(f => ({...f, first_name: e.target.value}))} className="input-field text-sm" placeholder="Kwame" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Last Name *</label>
+                    <input required value={onboardForm.last_name} onChange={e => setOnboardForm(f => ({...f, last_name: e.target.value}))} className="input-field text-sm" placeholder="Asante" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+                  <input required type="email" value={onboardForm.email} onChange={e => setOnboardForm(f => ({...f, email: e.target.value}))} className="input-field text-sm" placeholder="customer@email.com" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Phone *</label>
+                  <input required value={onboardForm.phone} onChange={e => setOnboardForm(f => ({...f, phone: e.target.value}))} className="input-field text-sm" placeholder="024XXXXXXX" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Ghana Card</label>
+                    <input value={onboardForm.ghana_card_number} onChange={e => setOnboardForm(f => ({...f, ghana_card_number: e.target.value}))} className="input-field text-sm" placeholder="GHA-XXXXXXXXX-X" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth</label>
+                    <input type="date" value={onboardForm.date_of_birth} onChange={e => setOnboardForm(f => ({...f, date_of_birth: e.target.value}))} className="input-field text-sm" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Gender</label>
+                    <select value={onboardForm.gender} onChange={e => setOnboardForm(f => ({...f, gender: e.target.value}))} className="input-field text-sm">
+                      <option value="">Select</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Account Product</label>
+                    <select value={onboardForm.product_id} onChange={e => setOnboardForm(f => ({...f, product_id: e.target.value}))} className="input-field text-sm">
+                      <option value="">Default (Basic Savings)</option>
+                      {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Branch</label>
+                  <select value={onboardForm.branch_id} onChange={e => setOnboardForm(f => ({...f, branch_id: e.target.value}))} className="input-field text-sm">
+                    <option value="">No specific branch</option>
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Password <span className="text-gray-400 font-normal">(leave blank for default)</span></label>
+                  <input type="password" value={onboardForm.password} onChange={e => setOnboardForm(f => ({...f, password: e.target.value}))} className="input-field text-sm" placeholder="Auto-generated if blank" />
+                </div>
+                <div className="flex gap-3 pt-1">
+                  <button type="button" onClick={resetOnboard} className="btn-secondary flex-1">Cancel</button>
+                  <button type="submit" disabled={onboarding} className="btn-primary flex-1">
+                    {onboarding ? 'Onboarding...' : 'Onboard Customer'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* RM Assignment Modal */}
       {showRMModal && rmCustomer && (

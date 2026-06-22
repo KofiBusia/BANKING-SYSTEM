@@ -127,6 +127,7 @@ export const adminAPI = {
   processLoan: (loanId: string, data: object) => API.post(`/admin/loans/${loanId}/process`, data),
   getStaff: () => API.get('/admin/staff'),
   createStaff: (data: object) => API.post('/admin/staff', data),
+  createCustomer: (data: object) => API.post('/admin/customers', data),
   getReports: (params?: object) => API.get('/admin/reports/summary', { params }),
   depositForCustomer: (data: object) => API.post('/admin/deposit-for-customer', data),
   getBranchLeague: (period?: string) => API.get('/admin/branch-league', { params: { period } }),
